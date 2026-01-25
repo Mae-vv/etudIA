@@ -54,9 +54,21 @@ def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
     return df.rename(columns=RENAMING_MAP)
 
-def filter_target_year(df: pd.DataFrame) -> pd.DataFrame:
+def filter_target_year(df: pd.DataFrame, year: str) -> pd.DataFrame:
     """
-    Filtrer les lignes du DataFrame sur l'année 2026
-    pour se concentrer sur l'offre de formation actuelle.
+    Filtrer les lignes du DataFrame sur l'année donnée
+    pour se concentrer sur l'offre de formation de la campagne cible.
     """
-    return df[df["session"] == "2026"]
+    return df[df["session"] == year]
+
+def clean_parcoursup_data(path: str | Path, year: str) -> pd.DataFrame:
+    """
+    Lance le pipeline complet de nettoyage pour le fichier Parcoursup:
+    chargement, suppression des colonnes inutiles, renommage
+    et filtrage sur l'année cible.
+    """
+    df = load_parcoursup_csv(path)
+    df = drop_unused_columns(df)
+    df = rename_columns(df)
+    df = filter_target_year(df, year)
+    return df
