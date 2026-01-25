@@ -1,4 +1,4 @@
-# Backend etudIa
+# Backend etudIA
 
 Ce dossier contient le code backend du projet etudIa (préparation des données Parcoursup, API d’orientation, etc.).
 
