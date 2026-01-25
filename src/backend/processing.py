@@ -13,20 +13,23 @@ UNUSED_COLUMNS = [
 ]
 
 RENAMING_MAP = {
-    "identifiant de l'établissement": "id_etablissement",
-    "nom de l'établissement": "name_etablissement",
-    "types d'établissement": "type_etablissement",
-    "types de formation": "type_formation",
-    "nom long de la formation": "name_formation",
-    "mentions/spécialités": "mentions_specialites",
-    "formations en apprentissage": "apprentissage",
-    "aménagement": "amenagement",
+    "Session": "session",
+    "Identifiant de l'établissement": "id_etablissement",
+    "Nom de l'établissement": "name_etablissement",
+    "Types d'établissement": "type_etablissement",
+    "Types de formation": "type_formation",
+    "Nom long de la formation": "name_formation",
+    "Mentions/Spécialités": "mentions_specialites",
+    "Formations en apprentissage": "apprentissage",
+    "Internat": "internat",
+    "Aménagement": "amenagement",
     "informations complémentaires": "info_complementaires",
-    "région": "region",
-    "département": "departement",
-    "lien vers la fiche formation": "link_formation",
-    "site internet de l'établissement": "website_etablissement",
-    "nom court de la formation": "short_name_formation",
+    "Région": "region",
+    "Département": "departement",
+    "Commune": "commune",
+    "Lien vers la fiche formation": "link_formation",
+    "Site internet de l'établissement": "website_etablissement",
+    "Nom court de la formation": "short_name_formation",
 }
 
 def load_parcoursup_csv(path: str | Path) -> pd.DataFrame:
