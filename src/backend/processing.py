@@ -12,6 +12,23 @@ UNUSED_COLUMNS = [
     'code_formation'
 ]
 
+RENAMING_MAP = {
+    "identifiant de l'établissement": "id_etablissement",
+    "nom de l'établissement": "name_etablissement",
+    "types d'établissement": "type_etablissement",
+    "types de formation": "type_formation",
+    "nom long de la formation": "name_formation",
+    "mentions/spécialités": "mentions_specialites",
+    "formations en apprentissage": "apprentissage",
+    "aménagement": "amenagement",
+    "informations complémentaires": "info_complementaires",
+    "région": "region",
+    "département": "departement",
+    "lien vers la fiche formation": "link_formation",
+    "site internet de l'établissement": "website_etablissement",
+    "nom court de la formation": "short_name_formation",
+}
+
 def load_parcoursup_csv(path: str | Path) -> pd.DataFrame:
     """
     Prend un chemin vers un fichier CSV Parcoursup,
@@ -26,3 +43,10 @@ def drop_unused_columns(df: pd.DataFrame) -> pd.DataFrame:
     pour l'analyse Parcoursup dans etudIA.
     """
     return df.drop(columns=[col for col in UNUSED_COLUMNS if col in df.columns])
+
+def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Renomme les colonnes du DataFrame selon RENAMING_MAP
+    pour plus de lisibilité et de cohérence.
+    """
+    return df.rename(columns=RENAMING_MAP)
