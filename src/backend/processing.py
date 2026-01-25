@@ -53,3 +53,10 @@ def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
     pour plus de lisibilité et de cohérence.
     """
     return df.rename(columns=RENAMING_MAP)
+
+def filter_target_year(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Filtrer les lignes du DataFrame sur l'année 2026
+    pour se concentrer sur l'offre de formation actuelle.
+    """
+    return df[df["session"] == "2026"]
