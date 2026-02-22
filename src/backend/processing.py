@@ -9,7 +9,9 @@ UNUSED_COLUMNS = [
     "Lien vers les données statistiques pour l'année antérieure",
     'code interne parcoursup de la formation',
     'code interne parcoursup pour les portails',
-    'code_formation'
+    'code_formation',
+    'Code interne Parcoursup de la formation',
+    'Code interne Parcoursup pour les portails'
 ]
 
 RENAMING_MAP = {
