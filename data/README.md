@@ -26,6 +26,10 @@ Cette section décrit l’état actuel du fichier préparé utilisé dans le pro
 2. Suppression des colonnes non nécessaires avec `drop_unused_columns(df)` (voir liste UNUSED_COLUMNS dans `processing.py`)
 3. Renommage des colonnes pour des noms plus explicites avec `rename_columns(df)` (mapping RENAMING_MAP)
 4. Filtre sur la campagne cible (par exemple `session == "2026"`) avec `filter_target_year(df, year)`
+5. Ajout d'un indicateur binaire valant 1 si la formation est identifiée comme “Formations en apprentissage”, 0 sinon (voir `is_apprentissage`)
+6. Ajout d'un code entier décrivant la présence d’un internat (0 = pas d’internat connu, 1 = internat pour filles et garçons, 2 = internat uniquement pour filles, 3 = internat uniquement pour garçons) (voir `internat_code`)
+
+Ces variables sont calculées dans src/backend/processing.py
 
 Ce pipeline est utilisé dans le notebook `traitement.ipynb` pour générer la version nettoyée des données, utilisée ensuite par l’IA d’orientation.
 

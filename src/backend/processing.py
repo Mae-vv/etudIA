@@ -63,6 +63,30 @@ def filter_target_year(df: pd.DataFrame, year: str) -> pd.DataFrame:
     """
     return df[df["session"] == year]
 
+def add_is_apprentissage(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Ajoute une colonne binaire 'is_apprentissage' :
+    1 si la formation est en apprentissage, 0 sinon.
+    """
+    df = df.copy()
+    df["is_apprentissage"] = (df["apprentissage"] == "Formations en apprentissage").astype(int)
+    return df
+
+def add_internat_code(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Ajoute une colonne 'internat_code' :
+    0 = pas d'internat connu
+    1 = internat pour filles et garçons
+    2 = internat réservé aux filles
+    3 = internat réservé aux garçons
+    """
+    df = df.copy()
+    df["internat_code"] = 0  # valeur par défaut
+    df.loc[df["internat"] == "Etablissements avec internat pour filles et garçons", "internat_code"] = 1
+    df.loc[df["internat"] == "Etablissements avec internat pour filles", "internat_code"] = 2
+    df.loc[df["internat"] == "Etablissements avec internat pour garçons", "internat_code"] = 3
+    return df
+
 def clean_parcoursup_data(path: str | Path, year: str) -> pd.DataFrame:
     """
     Lance le pipeline complet de nettoyage pour le fichier Parcoursup:
@@ -73,4 +97,6 @@ def clean_parcoursup_data(path: str | Path, year: str) -> pd.DataFrame:
     df = drop_unused_columns(df)
     df = rename_columns(df)
     df = filter_target_year(df, year)
+    df = add_is_apprentissage(df)
+    df = add_internat_code(df)
     return df
