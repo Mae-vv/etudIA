@@ -26,8 +26,18 @@ Cette section décrit l’état actuel du fichier préparé utilisé dans le pro
 2. Suppression des colonnes non nécessaires avec `drop_unused_columns(df)` (voir liste UNUSED_COLUMNS dans `processing.py`)
 3. Renommage des colonnes pour des noms plus explicites avec `rename_columns(df)` (mapping RENAMING_MAP)
 4. Filtre sur la campagne cible (par exemple `session == "2026"`) avec `filter_target_year(df, year)`
-5. Ajout d'un indicateur binaire valant 1 si la formation est identifiée comme “Formations en apprentissage”, 0 sinon (voir `is_apprentissage`)
-6. Ajout d'un code entier décrivant la présence d’un internat (0 = pas d’internat connu, 1 = internat pour filles et garçons, 2 = internat uniquement pour filles, 3 = internat uniquement pour garçons) (voir `internat_code`)
+
+
+#### Variables dérivées 
+
+1. is_apprentissage : 1 si la formation est proposée en apprentissage, 0 sinon
+2. internat_code : codage de la disponibilité d’un internat (0 = pas d’internat, 1 = internat filles et garçons, 2 = internat réservé aux filles, 3 = internat réservé aux garçons)
+3. is_presentiel : 1 si la formation peut être suivie en présentiel, 0 sinon
+4. is_partiel_distance : 1 si la formation est partiellement à distance, 0 sinon
+5. is_full_distance : 1 si la formation est entièrement à distance, 0 sinon
+6. has_sport_amenagement : 1 si des aménagements sont prévus pour les sportifs de haut niveau, 0 sinon.
+7. has_artist_amenagement : 1 si des aménagements sont prévus pour des artistes confirmés, 0 sinon
+8. has_other_amenagement : 1 si des aménagements sont prévus pour d’autres publics spécifiques, 0 sinon
 
 Ces variables sont calculées dans src/backend/processing.py
 

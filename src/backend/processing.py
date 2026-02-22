@@ -87,6 +87,31 @@ def add_internat_code(df: pd.DataFrame) -> pd.DataFrame:
     df.loc[df["internat"] == "Etablissements avec internat pour garçons", "internat_code"] = 3
     return df
 
+def add_amenagement_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Ajoute des colonnes dérivées de 'amenagement' :
+    - is_presentiel
+    - is_partiel_distance
+    - is_full_distance
+    - has_sport_amenagement
+    - has_artist_amenagement
+    - has_other_amenagement
+    """
+    df = df.copy()
+
+    amen_col = df["amenagement"].fillna("")
+
+    df["is_presentiel"] = amen_col.str.contains("Enseignement en présentiel", regex=False).astype(int)
+    df["is_partiel_distance"] = amen_col.str.contains("Enseignement partiellement à distance", regex=False).astype(int)
+    df["is_full_distance"] = amen_col.str.contains("Enseignement entièrement à distance", regex=False).astype(int)
+
+    df["has_sport_amenagement"] = amen_col.str.contains("Formations avec aménagements pour sportifs haut niveau", regex=False).astype(int)
+    df["has_artist_amenagement"] = amen_col.str.contains("Formations avec aménagements pour artistes confirmés", regex=False).astype(int)
+    df["has_other_amenagement"] = amen_col.str.contains("Formations avec aménagements pour autres publics spécifiques", regex=False).astype(int)
+
+    return df
+
+
 def clean_parcoursup_data(path: str | Path, year: str) -> pd.DataFrame:
     """
     Lance le pipeline complet de nettoyage pour le fichier Parcoursup:
@@ -99,4 +124,5 @@ def clean_parcoursup_data(path: str | Path, year: str) -> pd.DataFrame:
     df = filter_target_year(df, year)
     df = add_is_apprentissage(df)
     df = add_internat_code(df)
+    df = add_amenagement_features(df)
     return df
