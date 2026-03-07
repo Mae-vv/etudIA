@@ -35,9 +35,21 @@ def parse_formation_page(html: str) -> Dict[str, str]:
     Clés retournées (quand l'information est trouvée) :
     - 'presentation' : texte qui décrit la formation, son contenu et ses objectifs.
     - 'criteres_entree' : texte qui explique comment les candidatures sont analysées
-      (critères pris en compte, attendus, conseils aux candidats).
+      (attendus nationaux et complémentaire).
     - 'debouches_professionnels' : texte qui présente les métiers et secteurs accessibles
       après la formation.
+    - 'frais_de_scolarite' : texte qui énonce le coût de la formation.
+    - 'frais_de_scolarite_boursiers' : texte qui énonce le coût de la formation pour les
+      étudiants boursiers.
+    - 'langue_options' : texte qui présente les langues et options.
+    - 'nb_places': nombre de places disponibles.
+    - 'diplome_controle_par_etat': vérifier si formation reconnue par l'Etat.
+    - 'formation_selective': formation sélective ou non.
+    - 'epreuves_selection': les épreuves de sélections.
+    - 'frais_candidature': frais de candidature pour les étudiants.
+    - 'frais_candidature_boursiers': frais de candidature à la formation pour les
+        étudiants boursiers
+    - 'poursuite_etudes': possibilité de poursuite d'études.
 
     Paramètres
     ----------
@@ -67,6 +79,16 @@ def parse_formation_page(html: str) -> Dict[str, str]:
         "presentation": presentation_txt,
         "criteres_entree": "",
         "debouches_professionnels": "",
+        "frais_scolarite": "",
+        "frais_scolarite_boursiers": "",
+        "langues_options": "",
+        "nb_places": "",
+        "diplome_controle_par_etat": "",
+        "formation_selective": "",
+        "epreuves_selection": "",
+        "frais_candidature": "",
+        "frais_candidature_boursiers": "",
+        "poursuite_etudes": "",
     }
 
 def scrape_formation(url: str) -> Dict[str, str]:
@@ -77,6 +99,9 @@ def scrape_formation(url: str) -> Dict[str, str]:
     - 'presentation'
     - 'criteres_entree'
     - 'debouches_professionnels'
+    - 'frais_de_scolarite'
+    - 'frais_de_scolarite_boursiers'
+    - 'langue_options'
     """
     html = fetch_page(url)
     if html is None:
@@ -84,5 +109,8 @@ def scrape_formation(url: str) -> Dict[str, str]:
             "presentation": "",
             "criteres_entree": "",
             "debouches_professionnels": "",
+            "frais_de_scolarite": "",
+            "frais_de_scolarite_boursiers": "",
+            "langue_options": ""
         }
     return parse_formation_page(html)
