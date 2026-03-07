@@ -51,9 +51,20 @@ def parse_formation_page(html: str) -> Dict[str, str]:
         si l'information n'a pas été trouvée.
     """
     soup = BeautifulSoup(html, "html.parser")
+    
+    presentation_txt = ""
+    title = soup.find(
+        lambda tag: tag.name == "h4"
+        and "Présentation de la formation" in tag.get_text()
+    )
+
+    if title is not None:
+        container = title.find_next_sibling()
+        if container is not None:
+            presentation_txt = container.get_text(separator="\n", strip=True)
 
     return {
-        "presentation": "",
+        "presentation": presentation_txt,
         "criteres_entree": "",
         "debouches_professionnels": "",
     }

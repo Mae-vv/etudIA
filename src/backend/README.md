@@ -9,6 +9,7 @@ Ce dossier contient le code backend du projet etudIa (préparation des données 
 Objectif : extraire quelques informations structurées (présentation, critères d’entrée, débouchés) pour enrichir le dataset Parcoursup.
     - fetch_page(url) : télécharge le HTML d’une fiche formation publique Parcoursup.
     - scrape_formation(url) : récupère une fiche puis renvoie un dictionnaire standardisé (presentation, criteres_entree, debouches_professionnels) prêt à être intégré au dataset.
+    - parse_formation_page(html) : extrait pour l’instant la présentation de la formation à partir du HTML Parcoursup.
 
 Les fonctions de traitement des données sont testées avec pytest.
 Exemple : filter_target_year est vérifiée sur un DataFrame de test pour s’assurer qu’elle ne conserve que la session cible.
