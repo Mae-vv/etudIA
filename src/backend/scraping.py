@@ -64,6 +64,7 @@ def parse_formation_page(html: str) -> Dict[str, str]:
     """
     soup = BeautifulSoup(html, "html.parser")
     
+    # Presentation
     presentation_txt = ""
     title = soup.find(
         lambda tag: tag.name == "h4"
@@ -74,10 +75,27 @@ def parse_formation_page(html: str) -> Dict[str, str]:
         container = title.find_next_sibling()
         if container is not None:
             presentation_txt = container.get_text(separator="\n", strip=True)
+    
+    # Critères
+    criteres_parts = []
+
+    # Critères nationaux
+    for h4 in soup.find_all(lambda tag: tag.name == "h4" and "Les attendus nationaux" in tag.get_text()):
+        bloc = h4.find_next_sibling()
+        if bloc is not None:
+            criteres_parts.append(bloc.get_text(separator="\n", strip=True))
+    
+    # Critères complémentaires
+    for h5 in soup.find_all(lambda tag: tag.name == "h5" and "Les attendus complémentaires" in tag.get_text()):
+        bloc = h5.find_next_sibling()
+        if bloc is not None:
+            criteres_parts.append(bloc.get_text(separator="\n", strip=True))
+    
+    criteres_entree = "\n\n".join(criteres_parts)
 
     return {
         "presentation": presentation_txt,
-        "criteres_entree": "",
+        "criteres_entree": criteres_entree,
         "debouches_professionnels": "",
         "frais_scolarite": "",
         "frais_scolarite_boursiers": "",
