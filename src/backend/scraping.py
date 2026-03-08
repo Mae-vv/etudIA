@@ -1,6 +1,7 @@
 from typing import Dict, Optional
 
 import requests
+import pandas as pd
 import re 
 from bs4 import BeautifulSoup
 
@@ -251,15 +252,22 @@ def parse_formation_page(html: str) -> Dict[str, str]:
 
 def scrape_formation(url: str) -> Dict[str, str]:
     """
-    Récupère et parse une fiche formation Parcoursup à partir de son URL.
+    Télécharge et parse une fiche Parcoursup à partir de son URL.
 
-    Retourne un dictionnaire avec au moins les clés :
-    - 'presentation'
-    - 'criteres_entree'
-    - 'debouches_professionnels'
-    - 'frais_de_scolarite'
-    - 'frais_de_scolarite_boursiers'
-    - 'langue_options'
+    Retourne un dictionnaire standardisé avec au moins les clés :
+    - presentation
+    - criteres_entree
+    - debouches_professionnels
+    - frais_scolarite
+    - frais_scolarite_boursiers
+    - langues_options
+    - nb_places
+    - diplome_controle_par_etat
+    - formation_selective
+    - epreuves_selection
+    - frais_candidature
+    - frais_candidature_boursiers
+    - poursuite_etudes
     """
     html = fetch_page(url)
     if html is None:
@@ -267,8 +275,39 @@ def scrape_formation(url: str) -> Dict[str, str]:
             "presentation": "",
             "criteres_entree": "",
             "debouches_professionnels": "",
-            "frais_de_scolarite": "",
-            "frais_de_scolarite_boursiers": "",
-            "langue_options": ""
+            "poursuite_etudes": "",
+            "frais_scolarite": "",
+            "frais_scolarite_boursiers": "",
+            "langues_options": "",
+            "nb_places": "",
+            "formation_ouverte_boursiers": "",
+            "diplome_controle_par_etat": "",
+            "formation_selective": "",
+            "epreuves_selection": "",
+            "frais_candidature": "",
+            "frais_candidature_boursiers": "",
         }
     return parse_formation_page(html)
+
+def enrich_with_scraping(df: pd.DataFrame, url_col: str = "link_formation") -> pd.DataFrame:
+    """
+    Pour chaque URL de la colonne `url_col`, appelle `fetch_page` puis
+    `parse_formation_page`, et ajoute les colonnes :
+    presentation, criteres_entree, debouches_professionnels,
+    frais_scolarite, frais_scolarite_boursiers, langues_options,
+    nb_places, diplome_controle_par_etat, formation_selective,
+    epreuves_selection, frais_candidature,
+    frais_candidature_boursiers, poursuite_etudes.
+    """
+    df = df.copy()
+
+    for idx, url in df[url_col].head(10).items():
+        if not isinstance(url, str) or not url.strip():
+            continue  # on saute les URL vides
+        
+        infos = scrape_formation(url)
+
+        for key, value in infos.items():
+            df.loc[idx, key] = value
+    
+    return df
