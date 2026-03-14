@@ -114,7 +114,7 @@ def parse_formation_page(html: str) -> Dict[str, str]:
             poursuite_etudes_txt = container.get_text(separator="\n", strip=True)
 
     # Frais de scolarité
-    frais_scolarite_txt = ""
+    frais_scolarite_txt = None
     title = soup.find(lambda tag: tag.name == "h6" and "Par année" in tag.get_text())
 
     if title is not None:
@@ -126,12 +126,12 @@ def parse_formation_page(html: str) -> Dict[str, str]:
     if raw:
         montant = raw.split("(")[0].strip()
     else:
-        montant = ""
+        montant = None
     
     frais_scolarite_txt = montant
 
     # Frais de scolarité boursiers
-    frais_scolarite_boursiers_txt = ""
+    frais_scolarite_boursiers_txt = None
     title = soup.find(
         lambda tag: tag.name == "h6" and "Par année pour les étudiants boursiers"
         in tag.get_text())
@@ -145,7 +145,7 @@ def parse_formation_page(html: str) -> Dict[str, str]:
     if raw:
         montant = raw.split("(")[0].strip()
     else:
-        montant = ""
+        montant = None
     
     frais_scolarite_boursiers_txt = montant
 
@@ -168,13 +168,15 @@ def parse_formation_page(html: str) -> Dict[str, str]:
     langue_options_txt = clean
     
     # Nombre de place
-    nb_places_txt = ""
+    nb_places_txt = None
     for span in soup.find_all("span", class_="fr-badge pca-badge-custom"):
         text = span.get_text(strip=True)
         if "places" in text:
             m = re.search(r"\d+", text)
             if m:
                 nb_places_txt = int(m.group(0))
+            else:
+                nb_places_txt = None
             break 
 
     # Formation ouverte pour boursiers
@@ -213,8 +215,8 @@ def parse_formation_page(html: str) -> Dict[str, str]:
             epreuves_selection_txt = bloc.get_text(separator="\n", strip=True)
 
     # Frais de candidature et boursiers
-    frais_candidature_txt = ""
-    frais_candidature_boursiers_txt = ""
+    frais_candidature_txt = None
+    frais_candidature_boursiers_txt = None
     title = soup.find(
     lambda tag: tag.name == "h4" and "Frais de candidature" in tag.get_text()
     )
@@ -289,7 +291,9 @@ def scrape_formation(url: str) -> Dict[str, str]:
         }
     return parse_formation_page(html)
 
-def enrich_with_scraping(df: pd.DataFrame, url_col: str = "link_formation") -> pd.DataFrame:
+def enrich_with_scraping(df: pd.DataFrame,
+                         url_col: str = "link_formation",
+                         max_rows: int | None = 200) -> pd.DataFrame:
     """
     Pour chaque URL de la colonne `url_col`, appelle `fetch_page` puis
     `parse_formation_page`, et ajoute les colonnes :
@@ -300,12 +304,19 @@ def enrich_with_scraping(df: pd.DataFrame, url_col: str = "link_formation") -> p
     frais_candidature_boursiers, poursuite_etudes.
     """
     df = df.copy()
+    urls = df[url_col]
 
-    for idx, url in df[url_col].head(10).items():
+    if max_rows is not None:
+        urls = urls.head(max_rows)
+
+    for idx, url in urls.items():
         if not isinstance(url, str) or not url.strip():
             continue  # on saute les URL vides
         
-        infos = scrape_formation(url)
+        try:
+            infos = scrape_formation(url)
+        except Exception:
+            infos = {}
 
         for key, value in infos.items():
             df.loc[idx, key] = value
