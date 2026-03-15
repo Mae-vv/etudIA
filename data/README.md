@@ -51,3 +51,25 @@ Ce pipeline est utilisé dans le notebook `traitement.ipynb` pour générer la v
 - Vérifier la date de téléchargement et la cohérence avec la campagne Parcoursup analysée.
 - Mettre à jour la liste des filtres et transformations dès qu’un changement structurel est fait dans le code.
 - Mentionner la source et la licence dans les livrables et visualisations.
+
+## 5. Fichier enrichi Parcoursup 2026
+
+- Nom du fichier : `parcoursup_2026_enriched.csv`
+- Origine :
+  - Base : jeu de données Parcoursup 2026 (cartographie des formations).
+  - Enrichissement : scraping des fiches formations publiques Parcoursup (colonne `link_formation`).
+- Colonnes ajoutées (principales) :
+  - `presentation` : texte de présentation de la formation.
+  - `criteres_entree` : attendus nationaux et complémentaires, éléments de grille d’analyse.
+  - `debouches_professionnels`, `poursuite_etudes` : poursuites d’études et débouchés.
+  - `frais_scolarite`, `frais_scolarite_boursiers` : coûts estimés de la formation.
+  - `langues_options` : langues vivantes et options proposées.
+  - `nb_places` : nombre de places annoncées.
+  - `formation_ouverte_boursiers`, `diplome_controle_par_etat`, `formation_selective`,
+    `epreuves_selection`, `frais_candidature`, `frais_candidature_boursiers`.
+- Limites :
+  - Les informations de scraping ne sont pas disponibles pour toutes les formations
+    (structure de fiche différente ou sections absentes), ce qui entraîne un taux élevé
+    de valeurs manquantes pour certaines colonnes.
+  - Les montants restent pour l’instant des chaînes de caractères (formats monétaires
+    hétérogènes) et pourront être transformés plus tard selon les besoins d’analyse.
