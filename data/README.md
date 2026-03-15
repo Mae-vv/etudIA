@@ -81,3 +81,64 @@ Ce pipeline est utilisé dans le notebook `traitement.ipynb` pour générer la v
   - `rag_document` : ligne qui concatène nom de la formation, établissement, présentation
     critères d’entrée, poursuites d’études, débouchés et infos de sélection pour servir
     de support au futur RAG.
+
+# Préparation RAG pour l’aide à l’orientation
+
+L’objectif est de préparer les données Parcoursup pour un futur système de RAG 
+(Retrieval Augmented Generation) utilisé par l’IA d’aide à l’orientation des lycéens.
+​
+## 1. Source de vérité
+
+- Base de départ : parcoursup_2026_enriched.csv (données Parcoursup nettoyées + informations scrappées).
+- Chaque ligne représente une formation unique.
+​
+## 2. Document RAG (rag_document)
+
+Pour chaque formation, une colonne rag_document est construite à partir d’un texte concaténé comprenant
+notamment :
+- Nom de la formation (name_formation)
+- Type de formation (type_formation)
+- Nom et type d’établissement, avec localisation (name_etablissement, type_etablissement, commune, departement, region)
+- Mentions / spécialités (mentions_specialites)
+- Présentation de la formation (presentation)
+- Critères d’entrée et attendus (criteres_entree)
+- Poursuites d’études (poursuite_etudes)
+- Débouchés professionnels (debouches_professionnels)
+- Informations sur la sélectivité (formation_selective)
+- Éventuelles épreuves de sélection (epreuves_selection)
+
+Ce texte est ensuite destiné à être vectorisé pour la recherche sémantique.
+​
+## 3. Filtres et métadonnées structurées
+
+En parallèle, plusieurs colonnes restent des filtres structurés (non concaténés dans rag_document) pour
+guider la recherche et expliciter les recommandations :
+- Localisation : region, departement, commune
+- Modalités : is_apprentissage, is_presentiel, is_partiel_distance, is_full_distance
+- Accès et capacité : nb_places, formation_selective (0/1), epreuves_selection
+- Coûts : frais_scolarite, frais_scolarite_boursiers, frais_candidature, frais_candidature_boursiers
+- Conditions particulières : formation_ouverte_boursiers, internat_code, has_sport_amenagement, has_artist_amenagement, has_other_amenagement
+
+Ces colonnes permettront, au moment de la requête, de filtrer les formations (par exemple “BUT en apprentissage
+en Bretagne, peu onéreux, avec internat”) et d’expliquer clairement les critères utilisés.
+​
+## 4. Chunking et embeddings (prévu)
+
+Avant la vectorisation, les contenus rag_document pourront être découpés en chunks de taille raisonnable
+(blocs de longueur limitée) pour :
+- respecter les limites de longueur des modèles d’embeddings,
+- améliorer la précision de la recherche,
+- éviter de mélanger trop d’informations hétérogènes dans un même vecteur.
+
+Chaque chunk héritera des mêmes filtres et métadonnées que la formation d’origine.
+
+## 5. Flux RAG envisagé
+
+Étape 1 : le lycéen pose une question en langage naturel.
+Étape 2 : le système analyse la question et en extrait des contraintes de filtrage
+(ex. type de formation, région, apprentissage, coûts).
+Étape 3 : application des filtres sur les colonnes structurées du dataset.
+Étape 4 : recherche sémantique sur les rag_document (ou leurs chunks) des formations filtrées,
+à l’aide d’embeddings.
+Étape 5 : génération d’une réponse expliquant les formations proposées, en mentionnant explicitement
+les critères utilisés (coût, localisation, sélectivité, poursuites d’études, etc.).
