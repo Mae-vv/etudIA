@@ -73,3 +73,11 @@ Ce pipeline est utilisé dans le notebook `traitement.ipynb` pour générer la v
     de valeurs manquantes pour certaines colonnes.
   - Les montants restent pour l’instant des chaînes de caractères (formats monétaires
     hétérogènes) et pourront être transformés plus tard selon les besoins d’analyse.
+  
+## 6. Ajout d'une colonne pour le RAG
+
+- Nom du fichier : `parcoursup_2026_enriched_rag.csv`
+- Colonne ajoutée : 
+  - `rag_document` : ligne qui concatène nom de la formation, établissement, présentation
+    critères d’entrée, poursuites d’études, débouchés et infos de sélection pour servir
+    de support au futur RAG.
