@@ -227,7 +227,7 @@ def parse_formation_page(html: str) -> Dict[str, str]:
             for li in container.find_all("li"):
                 text = li.get_text(strip=True)
                 m = re.search(r"\d+[^\s]*\s*€", text)
-                montant = m.group(0) if m else ""
+                montant = m.group(0) if m else None
 
                 lower = text.lower()
                 if "non boursiers" in lower:
