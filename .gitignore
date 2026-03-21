@@ -210,4 +210,11 @@ __marimo__/
 
 # folders
 .vscode/
-data/
+notebooks/02_parcoursup_scraping.ipynb
+bruno/
+src/backend/test.py
+etudia_bruno/
+src/backend/test.py
+
+# files
+.env 

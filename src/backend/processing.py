@@ -25,7 +25,7 @@ RENAMING_MAP = {
     "Formations en apprentissage": "apprentissage",
     "Internat": "internat",
     "Aménagement": "amenagement",
-    "informations complémentaires": "info_complementaires",
+    "Informations complémentaires": "info_complementaires",
     "Région": "region",
     "Département": "departement",
     "Commune": "commune",
