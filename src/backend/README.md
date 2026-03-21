@@ -41,6 +41,16 @@ Cette étape est implémentée dans `src/backend/vector_store.py` :
 
 Ce DataFrame “explosé” (une ligne par chunk) servira ensuite de base à la création des embeddings et à la construction de la future base vectorielle (une entrée par chunk, avec ses métadonnées).
 
+### Base vectorielle et embeddings (v1)
+
+Pour la première version de la base vectorielle, le projet utilise un modèle d’embedding open source de la famille multilingual‑e5 (Hugging Face, licence permissive). Ce modèle est spécialement entraîné pour la recherche sémantique multilingue et offre de bonnes performances sur le français.
+
+Avant le choix du modèle, la longueur des chunks de ragdocument a été analysée : sur 29 026 chunks, la longueur maximale observée est d’environ 342 mots, avec une moyenne d’environ 104 mots, donc bien en‑dessous de la limite d’environ 512 tokens supportée par multilingual‑e5. Cela permet de vectoriser chaque chunk sans troncature.
+
+Ce choix répond aussi à une contrainte de déploiement local : le modèle reste utilisable sur CPU dans un contexte étudiant, sans infrastructure GPU lourde, tout en restant cohérent avec les objectifs de souveraineté.
+
+À plus long terme, le projet pourra évoluer vers des modèles plus lourds mais plus puissants pour la recherche sémantique, comme BGE‑M3 ou des embeddings Qwen récents, hébergés sur GPU (par exemple via un fournisseur souverain type Albert API). Ces modèles gèrent des contextes plus longs (jusqu’à plusieurs milliers de tokens), ce qui serait pertinent si la taille des documents ou le volume de données augmente.
+
 ## À faire
 
 - Ajouter les endpoints de l’API.
