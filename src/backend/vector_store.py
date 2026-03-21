@@ -74,3 +74,51 @@ def explode_chunks(df: pd.DataFrame,
             new_row["chunk_id"] = f"{idx}_{i}"
             rows.append(new_row)
     return pd.DataFrame(rows).reset_index(drop=True)
+
+def build_vector_store(df_chunks: pd.DataFrame) -> pd.DataFrame:
+    """
+    Crée une base vectorielle minimale à partir du DataFrame de chunks.
+
+    Objectif
+    --------
+    Générer un embedding pour chaque `chunk_text` et retourner un
+    DataFrame contenant au moins :
+    - `chunk_id`, `chunk_index` ;
+    - les métadonnées utiles pour le filtrage et l'explication
+      (par ex. `type_formation`, `region`, `isapprentissage`,
+      `isfulldistance`, `fraisscolarite`, etc.) ;
+    - une colonne `embedding` (représentation vectorielle du texte).
+
+    La première version pourra stocker cette base vectorielle dans un
+    fichier tabulaire (CSV ou parquet) afin d'être facilement rechargée
+    par le backend d'IA pour le RAG.
+
+    Paramètres
+    ----------
+    df_chunks : pd.DataFrame
+        DataFrame issu de `parcoursup_2026_enriched_chunks.csv`, avec
+        au moins `chunk_id`, `chunk_index` et `chunk_text`.
+
+    Retour
+    ------
+    pd.DataFrame
+        DataFrame prêt à être sauvegardé comme base vectorielle minimale.
+    """
+     # Squelette v1 : colonnes utiles,
+    cols_metadata = [
+        "chunk_id",
+        "chunk_index",
+        "chunk_text",
+        "type_formation",
+        "type_etablissement",
+        "commune",
+        "is_apprentissage",
+        "frais_scolarite",
+        "formation_selective",
+        "formation_ouverte_boursiers"
+        ""
+    ]
+
+    df_vs = df_chunks[cols_metadata].copy()
+    df_vs["embedding"] = None
+    return df_vs

@@ -122,7 +122,7 @@ guider la recherche et expliciter les recommandations :
 Ces colonnes permettront, au moment de la requête, de filtrer les formations (par exemple “BUT en apprentissage
 en Bretagne, peu onéreux, avec internat”) et d’expliquer clairement les critères utilisés.
 ​
-## 4. Chunking et embeddings (prévu)
+## 4. Chunking et embeddings
 
 Avant la vectorisation, les contenus rag_document pourront être découpés en chunks de taille raisonnable
 (blocs de longueur limitée) pour :
@@ -150,6 +150,18 @@ Ce choix de chunking permet :
 - de rester compatible avec les limites des modèles d’embeddings,
 - de limiter le mélange d’informations hétérogènes dans un même vecteur,
 - de garder des réponses plus ciblées pour les lycéens.
+
+### DataFrame de chunks pour la base vectorielle
+
+À partir du fichier `parcoursup_2026_enriched_rag.csv`, un DataFrame de chunks est généré afin de préparer la création de la base vectorielle. Chaque ligne du fichier `parcoursup_2026_enriched_chunks.csv` correspond à un **chunk** d’un `rag_document` (et non plus à une formation entière).
+
+- Le texte complet `rag_document` est découpé en segments de taille raisonnable (≈ 1 500–2 000 caractères, soit environ 500–800 tokens).
+- Chaque chunk est stocké dans la colonne `chunk_text` et identifié par :
+  - `chunk_id` : identifiant unique du chunk ;
+  - `chunk_index` : position du chunk dans le document original (0, 1, 2, …).
+- Toutes les métadonnées de la formation d’origine (type de formation, région, apprentissage, coûts, internat, aménagements, etc.) sont recopiées sur chaque chunk.
+
+Ce fichier de chunks sert de point de départ pour calculer les embeddings et construire la future base vectorielle utilisée par le système de RAG.
 
 ## 5. Flux RAG envisagé
 
