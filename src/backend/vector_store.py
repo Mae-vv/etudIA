@@ -1,6 +1,17 @@
 import pandas as pd
 from typing import List
+from sentence_transformers import SentenceTransformer
+import numpy as np
 
+MODEL_NAME = "intfloat/multilingual-e5-base"
+
+def load_embedding_model() -> SentenceTransformer:
+    """
+    Charge le modèle d'embedding (V1 : multilingual-e5).
+    Le modèle est téléchargé automatiquement depuis Hugging Face
+    lors du premier appel, puis mis en cache localement.
+    """
+    return SentenceTransformer(MODEL_NAME)
 
 def chunk_rag_document(text: str, max_chars: int = 2000) -> List[str]:
     """
@@ -115,10 +126,15 @@ def build_vector_store(df_chunks: pd.DataFrame) -> pd.DataFrame:
         "is_apprentissage",
         "frais_scolarite",
         "formation_selective",
-        "formation_ouverte_boursiers"
-        ""
+        "formation_ouverte_boursiers",
     ]
 
     df_vs = df_chunks[cols_metadata].copy()
-    df_vs["embedding"] = None
+    model = load_embedding_model()
+
+    texts = df_vs["chunk_text"].fillna("").astype(str).tolist()
+    embeddings = model.encode(texts, normalize_embeddings=True)
+
+    df_vs["embedding"] = list(embeddings)
+    
     return df_vs
