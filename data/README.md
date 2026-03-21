@@ -130,15 +130,34 @@ Avant la vectorisation, les contenus rag_document pourront être découpés en c
 - améliorer la précision de la recherche,
 - éviter de mélanger trop d’informations hétérogènes dans un même vecteur.
 
-Chaque chunk héritera des mêmes filtres et métadonnées que la formation d’origine.
+### Analyse de la longueur des documents RAG et choix du chunking
+
+Un notebook d’exploration (`05_rag_documents_lengths.ipynb`) analyse la longueur de la colonne `rag_document` (en caractères) à partir du fichier `parcoursup_2026_enriched_rag.csv`.
+
+Principaux résultats (ordre de grandeur) :
+- médiane de la longueur de `rag_document` : ~361 caractères ;
+- une moyenne situé autour de 848.5 caractères ;
+- maximum observé : ~6857 caractères ;
+- plus de 3 000 formations ont un `rag_document` de plus de 1 000 caractères.
+
+Ces valeurs montrent que certaines lignes utile au RAG sont relativement longues (présentation + critères d’entrée + poursuites d’études + débouchés + sélection). Pour éviter des vecteurs trop longs et améliorer la précision de la recherche sémantique, la base vectorielle sera construite à partir de **chunks** de texte :
+
+- chaque `rag_document` sera découpé en segments de taille raisonnable (ordre de grandeur : **1 500 à 2 000 caractères** par chunk, soit environ 500–800 tokens) ;
+- chaque chunk héritera des mêmes métadonnées que la formation d’origine (type de formation, région, apprentissage, coûts, internat, aménagements, etc.) ;
+- la recherche RAG se fera sur les embeddings de ces chunks, après filtrage préalable sur les colonnes structurées.
+
+Ce choix de chunking permet :
+- de rester compatible avec les limites des modèles d’embeddings,
+- de limiter le mélange d’informations hétérogènes dans un même vecteur,
+- de garder des réponses plus ciblées pour les lycéens.
 
 ## 5. Flux RAG envisagé
 
-Étape 1 : le lycéen pose une question en langage naturel.
-Étape 2 : le système analyse la question et en extrait des contraintes de filtrage
+- Étape 1 : le lycéen pose une question en langage naturel.
+- Étape 2 : le système analyse la question et en extrait des contraintes de filtrage
 (ex. type de formation, région, apprentissage, coûts).
-Étape 3 : application des filtres sur les colonnes structurées du dataset.
-Étape 4 : recherche sémantique sur les rag_document (ou leurs chunks) des formations filtrées,
+- Étape 3 : application des filtres sur les colonnes structurées du dataset.
+- Étape 4 : recherche sémantique sur les rag_document (ou leurs chunks) des formations filtrées,
 à l’aide d’embeddings.
-Étape 5 : génération d’une réponse expliquant les formations proposées, en mentionnant explicitement
+- Étape 5 : génération d’une réponse expliquant les formations proposées, en mentionnant explicitement
 les critères utilisés (coût, localisation, sélectivité, poursuites d’études, etc.).
