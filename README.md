@@ -21,6 +21,12 @@ L’objectif est de proposer des recommandations de formations transparentes, é
   - des filtres structurés (région, type de formation, apprentissage, distance, coûts, internat, aménagements, etc.) pour guider la recherche et expliciter les recommandations.
 - Ce jeu de données servira ensuite de base à une future “base vectorielle” et à un pipeline de RAG (embeddings + recherche sémantique + génération de réponses).
 
+## Base vectorielle et RAG
+
+Le projet utilise une base PostgreSQL (Docker) avec l’extension `pgvector` pour stocker les embeddings des chunks de texte Parcoursup.  
+Les embeddings sont générés en Python (Sentence Transformers, modèle multilingue e5-base) puis insérés dans la table `formations_chunks_vectors` via la fonction `upsert_chunks`.  
+Les requêtes RAG combinent une similarité cosinus (`embedding <=> query_vector`) et, à terme, des filtres structurés (type de formation, apprentissage, région, coûts…) pour proposer des formations pertinentes aux lycéens.
+
 ## Objectifs du projet
 
 - Aider les lycéens à comprendre et comparer les formations Parcoursup.

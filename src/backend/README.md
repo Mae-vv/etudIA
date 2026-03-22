@@ -18,7 +18,47 @@ Objectif : extraire quelques informations structurées (présentation, critères
 Les fonctions de traitement des données sont testées avec pytest.
 Exemple : filter_target_year est vérifiée sur un DataFrame de test pour s’assurer qu’elle ne conserve que la session cible.
 
+## Vectorisation
+
+### Préparation des chunks pour la base vectorielle
+
+Avant la création de la base vectorielle, le texte `rag_document` de chaque formation est découpé en segments plus courts (“chunks”).
+
+Cette étape est implémentée dans `src/backend/vector_store.py` :
+
+- `chunk_rag_document(text, max_chars=2000)`  
+  - découpe un `rag_document` en plusieurs segments de texte consécutifs ;  
+  - la taille cible d’un chunk est de l’ordre de 1 500–2 000 caractères (≈ 500–800 tokens) ;  
+  - l’objectif est d’éviter des embeddings trop longs ou hétérogènes et d’améliorer la précision de la recherche sémantique.
+
+- `explode_chunks(df, text_col="rag_document", max_chars=2000)`  
+  - transforme un DataFrame de formations (1 ligne = 1 formation) en un DataFrame de chunks ;  
+  - chaque formation peut donner plusieurs lignes, une par chunk ;  
+  - toutes les métadonnées de la formation (type de formation, région, apprentissage, coûts, internat, aménagements, etc.) sont recopiées sur chaque chunk ;  
+  - deux colonnes supplémentaires sont ajoutées :  
+    - `chunk_index` : position du chunk dans le `rag_document` (0, 1, 2, …) ;  
+    - `chunk_id` : identifiant unique du chunk (par exemple combinaison de l’index de la formation et de `chunk_index`).  
+
+Ce DataFrame “explosé” (une ligne par chunk) servira ensuite de base à la création des embeddings et à la construction de la future base vectorielle (une entrée par chunk, avec ses métadonnées).
+
+### Base vectorielle et embeddings (v1)
+
+Pour la première version de la base vectorielle, le projet utilise un modèle d’embedding open source de la famille multilingual‑e5 (Hugging Face, licence permissive). Ce modèle est spécialement entraîné pour la recherche sémantique multilingue et offre de bonnes performances sur le français.
+
+Avant le choix du modèle, la longueur des chunks de ragdocument a été analysée : sur 29 026 chunks, la longueur maximale observée est d’environ 342 mots, avec une moyenne d’environ 104 mots, donc bien en‑dessous de la limite d’environ 512 tokens supportée par multilingual‑e5. Cela permet de vectoriser chaque chunk sans troncature.
+
+Ce choix répond aussi à une contrainte de déploiement local : le modèle reste utilisable sur CPU dans un contexte étudiant, sans infrastructure GPU lourde, tout en restant cohérent avec les objectifs de souveraineté.
+
+À plus long terme, le projet pourra évoluer vers des modèles plus lourds mais plus puissants pour la recherche sémantique, comme BGE‑M3 ou des embeddings Qwen récents, hébergés sur GPU (par exemple via un fournisseur souverain type Albert API). Ces modèles gèrent des contextes plus longs (jusqu’à plusieurs milliers de tokens), ce qui serait pertinent si la taille des documents ou le volume de données augmente.
+
+## Base vectorielle pgvector (backend)
+
+- SGBD : PostgreSQL lancé via Docker, administré avec pgAdmin.  
+- Extension : `CREATE EXTENSION IF NOT EXISTS vector;` pour activer le type `vector` et l’opérateur `<=>` (cosinus).  
+- Schéma principal : table `formations_chunks_vectors` (`chunk_id` Primary Key, métadonnées de la formation, colonne `embedding vector(768)`).
+- Insertion côté Python : `src/backend/pgvector_store.py` expose `upsert_chunks(df_vs)` qui prend le DataFrame d’embeddings et fait un `INSERT ... ON CONFLICT (chunk_id) DO UPDATE`.
+- Première requête RAG : un notebook encode une question lycéen en embedding, puis interroge Postgres avec `ORDER BY embedding <=> query_vector LIMIT 3` pour récupérer les chunks les plus proches.
+
 ## À faire
 
 - Ajouter les endpoints de l’API.
-- Décrire le pipeline complet de traitement.
