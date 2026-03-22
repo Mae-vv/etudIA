@@ -51,6 +51,14 @@ Ce choix répond aussi à une contrainte de déploiement local : le modèle rest
 
 À plus long terme, le projet pourra évoluer vers des modèles plus lourds mais plus puissants pour la recherche sémantique, comme BGE‑M3 ou des embeddings Qwen récents, hébergés sur GPU (par exemple via un fournisseur souverain type Albert API). Ces modèles gèrent des contextes plus longs (jusqu’à plusieurs milliers de tokens), ce qui serait pertinent si la taille des documents ou le volume de données augmente.
 
+## Base vectorielle pgvector (backend)
+
+- SGBD : PostgreSQL lancé via Docker, administré avec pgAdmin.  
+- Extension : `CREATE EXTENSION IF NOT EXISTS vector;` pour activer le type `vector` et l’opérateur `<=>` (cosinus).  
+- Schéma principal : table `formations_chunks_vectors` (`chunk_id` Primary Key, métadonnées de la formation, colonne `embedding vector(768)`).
+- Insertion côté Python : `src/backend/pgvector_store.py` expose `upsert_chunks(df_vs)` qui prend le DataFrame d’embeddings et fait un `INSERT ... ON CONFLICT (chunk_id) DO UPDATE`.
+- Première requête RAG : un notebook encode une question lycéen en embedding, puis interroge Postgres avec `ORDER BY embedding <=> query_vector LIMIT 3` pour récupérer les chunks les plus proches.
+
 ## À faire
 
 - Ajouter les endpoints de l’API.
