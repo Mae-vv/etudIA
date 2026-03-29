@@ -65,6 +65,20 @@ Ce choix répond aussi à une contrainte de déploiement local : le modèle rest
 - `recommend_from_profile(profile, query_embedding)` combine filtres SQL (`WHERE ...`) et similarité cosinus (`embedding <=> query_vector`) pour renvoyer une liste de formations.
 - Le notebook `12_reco_mvp.ipynb` illustre le fonctionnement sur quelques profils tests et questions en langage naturel.
 
-## À faire
+### API de recommandation RAG (V1)
 
-- Ajouter les endpoints de l’API.
+Le backend expose une première API HTTP pour accéder au moteur de recommandation RAG.
+
+- **Endpoint** : `POST /recommendations`
+- **Corps de requête (JSON)** :
+  - `question` : texte libre de la question d’un lycéen (ex. "Je veux un BUT informatique en apprentissage en Bretagne...").
+  - `profile` : objet JSON avec les contraintes structurées (ex. `typeformation`, `isapprentissage`, `maxfraisscolarite`, `region`, etc.).
+  - `limit` : entier optionnel, nombre maximum de formations renvoyées (par défaut : 5).
+- **Comportement** :
+  - la question est encodée en embedding (modèle `intfloat/multilingual-e5-base`),
+  - le profil est traduit en filtres via le moteur de recommandation (`recommend_from_profile`),
+  - une requête est faite vers la base Postgres/pgvector,
+  - l’API renvoie un JSON de la forme :
+    ```json
+    { "recommendations": [ ... ] }
+    ```
