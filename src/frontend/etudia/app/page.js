@@ -14,6 +14,7 @@ export default function Chat() {
           {message.parts.map((part, i) => {
             switch (part.type) {
               case 'text':
+                console.log('Messages côté front :', messages);
                 return <div key={`${message.id}-${i}`}>{part.text}</div>;
             }
           })}

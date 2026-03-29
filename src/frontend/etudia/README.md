@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Frontend StudIA – interface de chat
 
-## Getting Started
+Ce projet est une application Next.js (App Router) qui fournit une interface de chat pour StudIA, l’assistant d’orientation destiné aux lycéens avant Parcoursup.
 
-First, run the development server:
+## Démarrer le frontend en local
+
+Depuis le dossier `frontend/etudIA` :
 
 ```bash
 npm run dev
-# or
+# ou
 yarn dev
-# or
+# ou
 pnpm dev
-# or
+# ou
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+L’application est accessible sur [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+La page principale `app/page.js` affiche une interface de chat basée sur le hook `useChat` de `@ai-sdk/react` :
+- les messages de l’utilisateur sont envoyés à l’endpoint Next.js `/api/chat`,
+- la page se met à jour automatiquement quand le code est modifié.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Endpoint `/api/chat`
 
-## Learn More
+Le backend Next.js expose une route API :
 
-To learn more about Next.js, take a look at the following resources:
+- **URL** : `POST /api/chat`
+- **Entrée** : historique des messages du chat (utilisateur + assistant), fourni automatiquement par `useChat`.
+- **Comportement** :
+  - récupère le dernier message de l’utilisateur,
+  - appelle le modèle OpenAI `gpt-4o` via le SDK `ai`,
+  - envoie un message système qui cadre le rôle du modèle :
+    - assistant d’orientation pour lycéens,
+    - réponses limitées au cadre orientation / formations (type Parcoursup),
+    - refus des questions hors sujet (actualités sportives, people, etc.),
+    - prise en compte des biais : ignorer prénom, style ou fautes de l’utilisateur pour ne pas inférer son origine, son genre ou son niveau.
+- **Sortie** : une réponse générée par le modèle, renvoyée en streaming au hook `useChat`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Cette couche API sera ensuite enrichie pour intégrer les résultats du moteur de recommandation RAG (backend Python + pgvector) dans le prompt envoyé au modèle.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## À venir
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Les prochaines évolutions prévues côté frontend sont :
+- afficher proprement les réponses de l’assistant dans le chat,
+- consommer les recommandations renvoyées par le backend Python,
+- préparer l’intégration avec un déploiement sur Vercel.
