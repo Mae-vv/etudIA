@@ -1,41 +1,45 @@
 import { openai } from '@ai-sdk/openai';
-import { streamText, UIMessage, convertToModelMessages } from 'ai';
+import { generateText, convertToModelMessages } from 'ai';
 
-// Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
 export async function POST(req) {
-  const { messages } = await req.json();
+  const body = await req.json();
+  const messages = Array.isArray(body) ? body : body.messages ?? [];
 
-  // 1. Dernier message utilisateur (pour le RAG)
-  const lastUserMessage = [...messages].reverse().find(
-    (m) => m.role === 'user'
-  );
+  // Limit context window to recent turns before model conversion.
+  const MAX_HISTORY = 4;
+  const recentMessages =
+    messages.length > MAX_HISTORY ? messages.slice(-MAX_HISTORY) : messages;
 
-  const lastUserText =
-    lastUserMessage?.parts
-      ?.filter((p) => p.type === 'text')
-      .map((p) => p.text)
-      .join(' ') ?? '';
+  try {
+    const result = streamText({
+      model: openai('gpt-4o-mini'),
+      system:
+        "Tu es un assistant d'orientation pour lycéens. " +
+        "Tu t'appuies sur une base de données de formations (type Parcoursup). " +
+        "Tu ne réponds pas aux questions qui sortent de ce cadre (par exemple actualité sportive, people, etc.). " +
+        "Tu ignores le prénom et toute information identifiante de l'utilisateur : " +
+        "tu ne tires aucune conclusion sur son niveau, son origine, son genre ou sa personnalité à partir de son prénom, de ses fautes ou de son style. " +
+        "Tu dois rester neutre, explicite sur tes limites et éviter tout biais. " +
+        "Si une question sort du cadre orientation/formation, tu expliques calmement que ce n'est pas ton rôle.",
+      messages: convertToModelMessages(recentMessages),
+      maxOutputTokens: 300,
+    });
 
-  console.log('Dernier message utilisateur (texte) :', lastUserText);
+    return result.toUIMessageStreamResponse();
+  } catch (err) {
+    console.error('Erreur OpenAI :', err);
 
-  if (!lastUserMessage) {
-    console.log("Pas de message utilisateur pour l'instant.");
+    return new Response(
+      JSON.stringify({
+        error:
+          "Je ne peux pas appeler le modèle de langage pour le moment (quota ou erreur). Tu peux réessayer plus tard.",
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
-
-  const result = streamText({
-    model: openai('gpt-4o'),
-    system:
-      "Tu es un assistant d'orientation pour lycéens. " +
-      "Tu t'appuies sur une base de données de formations (type Parcoursup). " +
-      "Tu ne réponds pas aux questions qui sortent de ce cadre (par exemple actualité sportive, people, etc.). " +
-      "Tu ignores le prénom et toute information identifiante de l'utilisateur : " +
-      "tu ne tires aucune conclusion sur son niveau, son origine, son genre ou sa personnalité à partir de son prénom, de ses fautes ou de son style. " +
-      "Tu dois rester neutre, explicite sur tes limites et éviter tout biais. " +
-      "Si une question sort du cadre orientation/formation, tu expliques calmement que ce n'est pas ton rôle.",
-    messages: convertToModelMessages(messages),
-  });
-
-  return result.toUIMessageStreamResponse();
 }

@@ -1,0 +1,6 @@
+{
+	"dependencies": {
+		"@ai-sdk/google": "^3.0.58",
+		"@google/generative-ai": "^0.24.1"
+	}
+}

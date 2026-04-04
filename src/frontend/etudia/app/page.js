@@ -16,6 +16,8 @@ export default function Chat() {
               case 'text':
                 console.log('Messages côté front :', messages);
                 return <div key={`${message.id}-${i}`}>{part.text}</div>;
+              default:
+                return null;
             }
           })}
         </div>
