@@ -217,6 +217,7 @@ etudia_bruno/
 src/backend/test.py
 notebooks/exports.ipynb
 data/processed/*.csv
+node_modules/
 
 # files
 .env
