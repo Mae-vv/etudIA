@@ -40,9 +40,21 @@ Le backend Next.js expose une route API :
 
 Cette couche API sera ensuite enrichie pour intégrer les résultats du moteur de recommandation RAG (backend Python + pgvector) dans le prompt envoyé au modèle.
 
+## Chat d’orientation
+
+Le front Next.js utilise `useChat` (`@ai-sdk/react`) pour appeler l’endpoint `POST /api/chat`.
+
+L’API `/api/chat` :
+- lit l’historique des messages et le dernier message utilisateur,
+- applique un message système qui cadre le LLM sur l’orientation Parcoursup et limite les sujets hors périmètre,
+- appelle le modèle OpenAI `gpt-4o-mini` via l’AI SDK,
+- limite la réponse à 300 tokens pour contrôler les coûts,
+- renvoie un message JSON `{ role, content }` consommé par le front.
+
+Les prompts ne contiennent aucune information identifiante (pas de nom, mail, etc.) afin de limiter les risques en termes de confidentialité.
+
 ## À venir
 
 Les prochaines évolutions prévues côté frontend sont :
-- afficher proprement les réponses de l’assistant dans le chat,
 - consommer les recommandations renvoyées par le backend Python,
 - préparer l’intégration avec un déploiement sur Vercel.
