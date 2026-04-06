@@ -1,4 +1,8 @@
 from src.backend.profile_schema import StudentProfile
+from openai import OpenAI
+import json
+
+client = OpenAI()
 
 def infer_profile_from_text(message: str) -> StudentProfile:
     """
@@ -26,8 +30,42 @@ def infer_profile_from_text(message: str) -> StudentProfile:
         "niveau_idee_orientation": "aucune_idee"
     }
 
-    Cette fonction sera plus tard implémentée à l'aide d'un LLM qui doit
-    toujours renvoyer un objet JSON compatible avec StudentProfile.
-    Pour l'instant, elle peut lever NotImplementedError.
+    Utilise un LLM pour analyser un message libre d'un lycéen
+    et renvoyer un StudentProfile JSON.
     """
-    raise NotImplementedError("LLM-based profile inference not implemented yet.")
+
+    system = (
+        "Tu es un assistant qui analyse des messages de lycéens pour "
+        "remplir un profil structuré StudentProfile. "
+        "Tu ne fais PAS de psychologie, tu ne déduis PAS l'origine, "
+        "le genre ou la personnalité. "
+        "Tu dois renvoyer UNIQUEMENT un objet JSON avec les clés : "
+        "type_formation, is_apprentissage, max_frais_scolarite, commune, "
+        "domains_interet, matieres_aimees, matieres_evitees, "
+        "preference_rythme, preference_travail, niveau_idee_orientation. "
+        "Les champs peuvent être null ou des listes vides si l'information "
+        "n'est pas présente dans le message."
+    )
+
+    response = client.responses.create(
+        model="gpt-4o-mini",
+        input=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": message},
+        ],
+        max_output_tokens=150,
+    )
+
+    raw = response.output[0].content[0].text
+
+    raw_stripped = raw.strip()
+    if raw_stripped.startswith("```"):
+        # on enlève les ```json et les ``` de fin
+        raw_stripped = raw_stripped.strip("`")
+        # supprime le tag json éventuel au début
+        if raw_stripped.startswith("json"):
+            raw_stripped = raw_stripped[len("json"):].lstrip()
+
+    data = json.loads(raw_stripped)
+
+    return data

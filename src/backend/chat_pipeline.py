@@ -7,8 +7,7 @@ from typing import Dict, Any, List
 
 model = SentenceTransformer("intfloat/multilingual-e5-base")
 
-
-def orienter_lyceen(message: str) -> str:
+def student_orientation(message: str) -> str:
     """
     Chaîne complète :
 
@@ -41,4 +40,20 @@ def orienter_lyceen(message: str) -> str:
     # answer = call_llm_conseiller(message, profile, rag_context)
     # return answer
 
-    raise NotImplementedError("LLM conseiller non encore implémenté.")
+    raise NotImplementedError("Chaîne complète sans LLM conseiller pour le moment.")
+
+def call_llm_advisor(
+    message: str,
+    profile: StudentProfile,
+    rag_context: List[Dict[str, Any]],
+) -> str:
+    """
+    Utilise un LLM pour générer une réponse d'orientation à partir :
+    - du message brut du lycéen,
+    - du profil structuré StudentProfile,
+    - des formations proposées par le RAG avec leurs explications.
+    """
+    # 1) Construire un system prompt qui cadre le rôle (orientation, neutralité, RGPD)
+    # 2) Construire un message "assistant caché" qui résume profile + rag_context
+    # 3) Appeler le LLM (pseudo-code) et renvoyer le texte
+    raise NotImplementedError("LLM conseiller non implémenté.")
