@@ -1,11 +1,14 @@
+import json
+from openai import OpenAI
+from typing import Dict, Any, List
+from sentence_transformers import SentenceTransformer
+
+from src.backend.profile_schema import StudentProfile
 from src.backend.profile_from_text import infer_profile_from_text
 from src.backend.recommendation import recommend_from_profile
-from src.backend.profile_schema import StudentProfile
-from sentence_transformers import SentenceTransformer
-from typing import Dict, Any, List
-
 
 model = SentenceTransformer("intfloat/multilingual-e5-base")
+client = OpenAI()
 
 def student_orientation(message: str) -> str:
     """
@@ -36,11 +39,10 @@ def student_orientation(message: str) -> str:
             "explanation": r.get("explanation"),
         })
 
-    # 5) Appel au LLM 2 (pseudo-code)
-    # answer = call_llm_conseiller(message, profile, rag_context)
-    # return answer
+    # 5) Appel au LLM 2
+    answer = call_llm_advisor(message, profile, rag_context)
 
-    raise NotImplementedError("Chaîne complète sans LLM conseiller pour le moment.")
+    return answer
 
 def call_llm_advisor(
     message: str,
@@ -48,12 +50,46 @@ def call_llm_advisor(
     rag_context: List[Dict[str, Any]],
 ) -> str:
     """
-    Utilise un LLM pour générer une réponse d'orientation à partir :
+    Utilise gpt-4o-mini pour générer une réponse d'orientation à partir :
     - du message brut du lycéen,
     - du profil structuré StudentProfile,
     - des formations proposées par le RAG avec leurs explications.
     """
-    # 1) Construire un system prompt qui cadre le rôle (orientation, neutralité, RGPD)
-    # 2) Construire un message "assistant caché" qui résume profile + rag_context
-    # 3) Appeler le LLM (pseudo-code) et renvoyer le texte
-    raise NotImplementedError("LLM conseiller non implémenté.")
+    system_prompt = (
+        "Tu es un assistant d'orientation pour lycéens.\n"
+        "Tu t'appuies UNIQUEMENT sur les formations fournies dans le contexte.\n"
+        "Tu restes neutre, tu n'infères jamais l'origine, le genre, "
+        "la personnalité ou le niveau social.\n"
+        "Tu expliques clairement tes suggestions et rappelles que ce sont "
+        "des pistes, pas des décisions définitives.\n"
+        "Pour chaque formation que tu cites, explique en une phrase pourquoi elle correspond, "
+        "en t'appuyant uniquement sur le champ 'explanation' fourni.\n"
+        "Ne parle pas de critères (par exemple les frais) s'ils ne sont pas mentionnés dans "
+        "le profil structuré ou dans 'explanation'.\n"
+    )
+
+    # Résumé du profil et des recos pour le modèle
+    profile_json = json.dumps(profile, ensure_ascii=False)
+    rag_json = json.dumps(rag_context, ensure_ascii=False)
+
+    context_message = (
+        "Voici le profil structuré du lycéen (StudentProfile) :\n"
+        f"{profile_json}\n\n"
+        "Voici une liste de formations proposées par un moteur RAG, "
+        "avec une explication pour chacune :\n"
+        f"{rag_json}\n\n"
+        "En t'appuyant uniquement sur ces éléments, rédige une réponse pour le lycéen."
+    )
+
+    response = client.responses.create(
+        model="gpt-4o-mini",
+        input=[
+            {"role": "system", "content": system_prompt},
+            {"role": "assistant", "content": context_message},
+            {"role": "user", "content": message},
+        ],
+        max_output_tokens=300,  # contrôle du coût
+    )
+
+    answer = response.output[0].content[0].text
+    return answer
