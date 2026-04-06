@@ -1,8 +1,9 @@
 from typing import Dict, Any, List
 import numpy as np
 from src.backend.pgvector_store import get_pg_connection
+from src.backend.profile_schema import StudentProfile
 
-def build_filters_from_profile(profile: Dict[str, Any]) -> Dict[str, Any]:
+def build_filters_from_profile(profile: StudentProfile) -> Dict[str, Any]:
     """
     Traduit un 'profil lycéen' simplifié en filtres structurés.
 
@@ -36,7 +37,7 @@ def build_filters_from_profile(profile: Dict[str, Any]) -> Dict[str, Any]:
 
     return filters
 
-def recommend_from_profile(profile: Dict[str, Any],
+def recommend_from_profile(profile: StudentProfile,
                            query_embedding: np.ndarray,
                            limit: int = 5) -> List[Dict[str, Any]]:
     """
@@ -93,6 +94,35 @@ def recommend_from_profile(profile: Dict[str, Any],
 
     results: List[Dict[str, Any]] = []
     for row in rows:
+
+        reason = {
+            "match_type_formation": (
+                profile.get("type_formation") is None
+                or row[2] is None
+                or profile.get("type_formation") in row[2]
+            ),
+            "match_apprentissage": (
+                profile.get("is_apprentissage") is None
+                or filters.get("is_apprentissage") is None
+                or filters.get("is_apprentissage") == profile.get("is_apprentissage")
+            ),
+            "under_budget": (
+                profile.get("max_frais_scolarite") is None
+                or row[4] is None
+                or row[4] <= profile["max_frais_scolarite"]
+            ),
+        }
+
+        explanation_parts = []
+        if reason["match_type_formation"]:
+            explanation_parts.append("correspond au type de formation que tu recherches")
+        if reason["match_apprentissage"]:
+            explanation_parts.append("propose de l'apprentissage, comme tu le souhaites")
+        if reason["under_budget"]:
+            explanation_parts.append("respecte ton budget (ou ne dépasse pas le plafond indiqué)")
+
+        explanation = " ; ".join(explanation_parts) if explanation_parts else "formation proche de ta demande."
+
         results.append({
             "chunk_id": row[0],
             "chunk_text": row[1],
@@ -100,5 +130,7 @@ def recommend_from_profile(profile: Dict[str, Any],
             "commune": row[3],
             "frais_scolarite": row[4],
             "distance": row[5],
+            "reason": reason,
+            "explanation": explanation,
         })
     return results
