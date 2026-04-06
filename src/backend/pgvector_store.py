@@ -27,15 +27,17 @@ def get_pg_connection():
     )
     return conn
 
+
+import re
 def clean_frais(value):
     if pd.isna(value):
         return None
-    if isinstance(value, str):
-        # Extraire nombre : "178 euros" → 178
-        import re
-        m = re.search(r'(\d+(?:,\d+)?)', str(value))
-        return int(m.group(1).replace(',', '.')) if m else None
-    return int(value)
+    s = str(value)
+    m = re.search(r'(\d+(?:[.,]\d+)?)', s)
+    if not m:
+        return None
+    num = float(m.group(1).replace(',', '.'))
+    return int(round(num))
 
 def upsert_chunks(df_vs: pd.DataFrame) -> None:
     """

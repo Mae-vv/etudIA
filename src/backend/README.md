@@ -59,6 +59,10 @@ Ce choix répond aussi à une contrainte de déploiement local : le modèle rest
 - Insertion côté Python : `src/backend/pgvector_store.py` expose `upsert_chunks(df_vs)` qui prend le DataFrame d’embeddings et fait un `INSERT ... ON CONFLICT (chunk_id) DO UPDATE`.
 - Première requête RAG : un notebook encode une question lycéen en embedding, puis interroge Postgres avec `ORDER BY embedding <=> query_vector LIMIT 3` pour récupérer les chunks les plus proches.
 
+Le notebook `13_full_vector_store.ipynb` charge le csv `parcoursup_2026_enriched_chunks.csv`,
+chunk le texte avec `explode_chunks`, créé les embeddings e5 avec `build_vector_store` et insère le tout
+dans la table Postgres `formations_chunks_vectors` via `upsert_chunks`
+
 ## Moteur de recommandation RAG V1
 
 - `recommendation.py` : traduit un profil lycéen simplifié en filtres structurés (type de formation, etc.) et appelle la base pgvector pour récupérer les chunks les plus proches.
