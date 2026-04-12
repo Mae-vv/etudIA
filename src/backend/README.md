@@ -86,3 +86,10 @@ Le backend expose une première API HTTP pour accéder au moteur de recommandati
     ```json
     { "recommendations": [ ... ] }
     ```
+
+### Chaîne d'orientation RAG + LLM
+
+- `profile_schema.py` définit `StudentProfile`, un profil structuré de lycéen (préférences, contraintes).
+- `profile_from_text.py` utilise gpt-4o-mini pour inférer un `StudentProfile` à partir d'un message libre.
+- `recommendation.py` applique les filtres + RAG (pgvector) et renvoie des formations avec `reason` et `explanation`.
+- `chat_pipeline.py` orchestre message → StudentProfile → RAG → appel LLM conseiller pour produire une réponse textuelle.
