@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from src.backend.recommendation import recommend_from_profile
 from src.backend.embeddings import get_query_embedding
 from src.backend.profile_schema import StudentProfile
-from src.backend.chat_pipeline import call_llm_advisor
+from src.backend.chat_pipeline import student_orientation
 
 app = FastAPI()
 
@@ -31,6 +31,5 @@ def chat_orientation(req: ChatRequest):
     Endpoint de haut niveau : reçoit un message de lycéen
     et renvoie une réponse textuelle d’orientation.
     """
-    # Pour l’instant, ça lèvera encore NotImplementedError
-    answer = call_llm_advisor(req.message)
+    answer = student_orientation(req.message)
     return {"answer": answer}

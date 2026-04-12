@@ -93,3 +93,8 @@ Le backend expose une première API HTTP pour accéder au moteur de recommandati
 - `profile_from_text.py` utilise gpt-4o-mini pour inférer un `StudentProfile` à partir d'un message libre.
 - `recommendation.py` applique les filtres + RAG (pgvector) et renvoie des formations avec `reason` et `explanation`.
 - `chat_pipeline.py` orchestre message → StudentProfile → RAG → appel LLM conseiller pour produire une réponse textuelle.
+
+## Intégration front 
+### Intégration avec le front Next.js
+
+Le backend expose un endpoint `POST /chat-orientation` (FastAPI) qui reçoit un message utilisateur sous la forme `{ "message": "<texte>" }` et renvoie une réponse structurée `{ "answer": "<réponse générée par le RAG>" }`. Ce backend est consommé par le front Next.js via la route intermédiaire `/api/chat` (côté Next), qui joue le rôle d’adaptateur : elle récupère les messages envoyés depuis l’interface, extrait le dernier message utilisateur, appelle `http://127.0.0.1:8000/chat-orientation`, puis renvoie au front un objet simplifié `{ "id": "<timestamp>", "role": "assistant", "content": "<answer>" }`. L’interface de chat affiche ensuite les échanges en s’appuyant uniquement sur ces champs `role` et `content`.
