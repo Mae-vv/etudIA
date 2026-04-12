@@ -59,13 +59,46 @@ export async function POST(req) {
   const data = await ragResponse.json();
   console.log("Réponse backend /chat-orientation :", data);
 
-  // Répondre dans un format simple (un message assistant)
-  const message = {
-    id: Date.now().toString(),
-    role: "assistant",
-    content: data.answer,
-  };
 
-  // 👉 au lieu de { messages: [message] }
-  return NextResponse.json(message);
+  const fullText = data.answer ?? "";
+
+  // 🔽 À partir d’ici : streaming artificiel de fullText
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream({
+    start(controller) {
+      const chunkSize = 20; // nb de caractères par "tick"
+      let index = 0;
+
+      function push() {
+        if (index >= fullText.length) {
+          controller.close();
+          return;
+        }
+        const slice = fullText.slice(index, index + chunkSize);
+        index += chunkSize;
+        controller.enqueue(encoder.encode(slice));
+        // petit délai pour l'effet "chat"
+        setTimeout(push, 20);
+      }
+
+      push();
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+    },
+  });
 }
+  // Répondre dans un format simple (un message assistant)
+//   const message = {
+//     id: Date.now().toString(),
+//     role: "assistant",
+//     content: data.answer,
+//   };
+
+//   return NextResponse.json(message);
+// }
