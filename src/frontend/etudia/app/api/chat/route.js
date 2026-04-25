@@ -16,11 +16,10 @@ export async function POST(req) {
     messages.length > MAX_HISTORY ? messages.slice(-MAX_HISTORY) : messages;
 
   // Dernier message utilisateur
-  const lastUserMessage = [...recentMessages].reverse().find(
+  const lastUserMessage = [...messages].reverse().find(
     (m) => m.role === "user",
   );
 
-  // Selon ta version de useChat, soit m.content, soit m.parts[*].text
   const userText =
     lastUserMessage?.content ??
     (lastUserMessage?.parts
@@ -41,7 +40,10 @@ export async function POST(req) {
   const ragResponse = await fetch("http://127.0.0.1:8000/chat-orientation", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message: userText }),
+    body: JSON.stringify({
+      message: userText,
+      history: recentMessages,
+    }),
   });
 
   if (!ragResponse.ok) {
@@ -62,7 +64,7 @@ export async function POST(req) {
 
   const fullText = data.answer ?? "";
 
-  // 🔽 À partir d’ici : streaming artificiel de fullText
+  // Streaming artificiel de fullText
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({

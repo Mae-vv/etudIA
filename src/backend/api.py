@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 from fastapi import FastAPI
 from pydantic import BaseModel
 
@@ -21,9 +21,13 @@ def get_recommendations(req: RecommendationRequest):
     recos = recommend_from_profile(profile, query_emb, limit=req.limit)
     return {"recommendations": recos}
 
+class ChatMessage(BaseModel):
+    role: str 
+    content: Optional[str] = None
 
 class ChatRequest(BaseModel):
     message: str
+    history: List[ChatMessage] = []
 
 @app.post("/chat-orientation")
 def chat_orientation(req: ChatRequest):
@@ -31,5 +35,5 @@ def chat_orientation(req: ChatRequest):
     Endpoint de haut niveau : reçoit un message de lycéen
     et renvoie une réponse textuelle d’orientation.
     """
-    answer = student_orientation(req.message)
+    answer = student_orientation(req.message, req.history)
     return {"answer": answer}
