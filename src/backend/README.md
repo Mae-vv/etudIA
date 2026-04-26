@@ -109,6 +109,9 @@ Pour chaque formation retournée, le backend ajoute :
 
 Ces champs `reason` et `explanation` servent de base à la transparence : ils permettent d’expliquer clairement sur quels critères objectifs la recommandation est faite, indépendamment du texte généré par le LLM.
 
+Le moteur RAG passe maintenant au LLM, pour chaque reco, un petit extrait de contenu de la fiche Parcoursup (en plus des métadonnées et d’explanation).
+La longueur des réponses du conseiller est plafonnée à ~400 tokens pour garder des réponses détaillées mais contrôlées.
+
 Intégration dans la chaîne de chat
 
 La route backend `/chat-orientation` exploite désormais ces explications dans la réponse du chat :
