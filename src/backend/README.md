@@ -86,3 +86,43 @@ Le backend expose une première API HTTP pour accéder au moteur de recommandati
     ```json
     { "recommendations": [ ... ] }
     ```
+
+### Chaîne d'orientation RAG + LLM
+
+- `profile_schema.py` définit `StudentProfile`, un profil structuré de lycéen (préférences, contraintes).
+- `profile_from_text.py` utilise gpt-4o-mini pour inférer un `StudentProfile` à partir d'un message libre.
+- `recommendation.py` applique les filtres + RAG (pgvector) et renvoie des formations avec `reason` et `explanation`.
+- `chat_pipeline.py` orchestre message → StudentProfile → RAG → appel LLM conseiller pour produire une réponse textuelle.
+
+## Filtres RAG et explications pour le chat (V2)
+
+La version actuelle du moteur de recommandation ne se limite plus à renvoyer des chunks “proches” sémantiquement : il combine des filtres structurés et des explications lisibles.
+
+- `StudentProfile` (défini dans profile_schema.py) représente un profil lycéen structuré :
+contraintes objectives (type de formation souhaité, apprentissage ou non, budget maximal, commune/zone géographique),
+et champs plus souples (centres d’intérêt, matières appréciées, préférences de travail, etc.).
+- `recommend_from_profile(profile, query_embedding, limit)` utilise ce profil pour construire des filtres SQL sur la table formations_chunks_vectors (type de formation, apprentissage, frais de scolarité, localisation quand c’est possible), puis applique la similarité cosinus via pgvector pour classer les résultats.
+
+Pour chaque formation retournée, le backend ajoute :
+- un objet `reason` avec des booléens explicites (`match_type_formation`, `match_apprentissage`, `under_budget`, etc.) indiquant en quoi la formation respecte (ou non) les contraintes posées ;
+- une phrase courte `explanation` en français, synthétisant ces raisons (par exemple : “correspond au type de formation que tu recherches, propose de l’apprentissage comme tu le souhaites et respecte ton budget”).
+
+Ces champs `reason` et `explanation` servent de base à la transparence : ils permettent d’expliquer clairement sur quels critères objectifs la recommandation est faite, indépendamment du texte généré par le LLM.
+
+Intégration dans la chaîne de chat
+
+La route backend `/chat-orientation` exploite désormais ces explications dans la réponse du chat :
+- `chat_pipeline.py` prend le message libre du lycéen, en déduit (directement ou via `profile_from_text.py`) un `StudentProfile`, appelle `recommend_from_profile`, puis construit un “contexte RAG” qui inclut les formations sélectionnées et leurs `explanation`.
+
+Ce contexte est injecté dans le prompt du LLM “conseiller”, qui doit :
+
+s’appuyer uniquement sur les formations fournies par le RAG ;
+
+expliquer au lycéen en quoi chaque suggestion colle à ses contraintes (type de diplôme, apprentissage ou non, budget, localisation), en reprenant les explications calculées côté backend.
+
+La route Next.js `/api/chat` reste un adaptateur : elle reçoit la liste des messages du front, envoie le dernier message utilisateur à `/chat-orientation`, puis renvoie au front une réponse unique `{ "role": "assistant", "content": "<texte explicatif>" }` déjà enrichie par ces éléments de RAG.
+
+## Intégration front 
+### Intégration avec le front Next.js
+
+Le backend expose un endpoint `POST /chat-orientation` (FastAPI) qui reçoit un message utilisateur sous la forme `{ "message": "<texte>" }` et renvoie une réponse structurée `{ "answer": "<réponse générée par le RAG>" }`. Ce backend est consommé par le front Next.js via la route intermédiaire `/api/chat` (côté Next), qui joue le rôle d’adaptateur : elle récupère les messages envoyés depuis l’interface, extrait le dernier message utilisateur, appelle `http://127.0.0.1:8000/chat-orientation`, puis renvoie au front un objet simplifié `{ "id": "<timestamp>", "role": "assistant", "content": "<answer>" }`. L’interface de chat affiche ensuite les échanges en s’appuyant uniquement sur ces champs `role` et `content`.

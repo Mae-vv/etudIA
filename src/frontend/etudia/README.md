@@ -18,43 +18,50 @@ bun dev
 
 L’application est accessible sur [http://localhost:3000](http://localhost:3000).
 
-La page principale `app/page.js` affiche une interface de chat basée sur le hook `useChat` de `@ai-sdk/react` :
-- les messages de l’utilisateur sont envoyés à l’endpoint Next.js `/api/chat`,
-- la page se met à jour automatiquement quand le code est modifié.
+## Interface de chat
+
+La page principale `app/page.js` affiche une interface de chat simple (messages **User** / **AI**) qui :
+
+- conserve l’historique des échanges côté frontend,
+- envoie le dernier message de l’utilisateur à la route Next `/api/chat`,
+- affiche la réponse de l’IA en streaming texte (le message AI se remplit progressivement),
+- fait un auto‑scroll automatique vers le bas à chaque nouveau message,
+- montre une barre de chargement au‑dessus du champ de saisie pendant que la requête est envoyée et traitée par le backend (profil structuré + RAG + LLM).
+
+L’historique complet reste côté front, mais seul le dernier message utilisateur est utilisé pour interroger l’API d’orientation.
 
 ## Endpoint `/api/chat`
 
 Le backend Next.js expose une route API :
 
 - **URL** : `POST /api/chat`
-- **Entrée** : historique des messages du chat (utilisateur + assistant), fourni automatiquement par `useChat`.
+- **Entrée** : historique des messages du chat (utilisateur + assistant), sous forme d’un tableau JSON.
 - **Comportement** :
-  - récupère le dernier message de l’utilisateur,
-  - appelle le modèle OpenAI `gpt-4o` via le SDK `ai`,
-  - envoie un message système qui cadre le rôle du modèle :
-    - assistant d’orientation pour lycéens,
-    - réponses limitées au cadre orientation / formations (type Parcoursup),
-    - refus des questions hors sujet (actualités sportives, people, etc.),
-    - prise en compte des biais : ignorer prénom, style ou fautes de l’utilisateur pour ne pas inférer son origine, son genre ou son niveau.
-- **Sortie** : une réponse générée par le modèle, renvoyée en streaming au hook `useChat`.
+  - récupère le dernier message de l’utilisateur (texte libre),
+  - appelle le backend FastAPI `POST /chat-orientation` avec ce message,
+  - reçoit une réponse textuelle unique (`answer`) produite par la chaîne backend (profil structuré, moteur de recommandations RAG, LLM conseiller),
+  - renvoie cette réponse sous forme de flux texte (streaming) au frontend.
+- **Sortie** : un flux `text/plain` qui est assemblé côté front pour créer un message AI.
 
-Cette couche API sera ensuite enrichie pour intégrer les résultats du moteur de recommandation RAG (backend Python + pgvector) dans le prompt envoyé au modèle.
+## Chat d’orientation (cadrage éthique)
 
-## Chat d’orientation
+Côté backend Python, l’API `/chat-orientation` :
 
-Le front Next.js utilise `useChat` (`@ai-sdk/react`) pour appeler l’endpoint `POST /api/chat`.
+- infère un profil structuré de lycéen (StudentProfile) à partir du message,
+- interroge un moteur RAG basé sur pgvector pour récupérer des formations pertinentes avec une explication,
+- appelle un LLM (`gpt-4o-mini`) avec un prompt système qui cadre le modèle :
+  - rôle : assistant d’orientation pour lycéens,
+  - réponses limitées au cadre orientation / formations (type Parcoursup),
+  - refus des questions hors sujet (actualités sportives, people, etc.),
+  - neutralité : ne pas inférer l’origine, le genre, la personnalité ou le niveau social à partir du prénom, du style ou des fautes.
+- limite la longueur des réponses pour garder un coût maîtrisé.
 
-L’API `/api/chat` :
-- lit l’historique des messages et le dernier message utilisateur,
-- applique un message système qui cadre le LLM sur l’orientation Parcoursup et limite les sujets hors périmètre,
-- appelle le modèle OpenAI `gpt-4o-mini` via l’AI SDK,
-- limite la réponse à 300 tokens pour contrôler les coûts,
-- renvoie un message JSON `{ role, content }` consommé par le front.
-
-Les prompts ne contiennent aucune information identifiante (pas de nom, mail, etc.) afin de limiter les risques en termes de confidentialité.
+Les prompts ne contiennent aucune information identifiante (pas de nom, mail, etc.) afin de limiter les risques de confidentialité.
 
 ## À venir
 
 Les prochaines évolutions prévues côté frontend sont :
-- consommer les recommandations renvoyées par le backend Python,
+
+- mieux mettre en forme les justifications de recommandations (explications par formation),
+- consommer de façon plus structurée les métadonnées renvoyées par le backend (type de formation, ville, budget, apprentissage),
 - préparer l’intégration avec un déploiement sur Vercel.
