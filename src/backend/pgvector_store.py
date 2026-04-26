@@ -18,14 +18,18 @@ def get_pg_connection():
     Retourne :
         psycopg2.extensions.connection : objet connexion à utiliser avec cursor().
     """
-    conn = psycopg2.connect(
+    db_url = os.getenv("DATABASE_URL")
+
+    if db_url:
+        return psycopg2.connect(db_url)
+
+    return psycopg2.connect(
         host=os.getenv("PGHOST"),
         port=os.getenv("PGPORT"),
         dbname=os.getenv("PGDATABASE"),
         user=os.getenv("PGUSER"),
         password=os.getenv("PGPASSWORD"),
     )
-    return conn
 
 
 import re

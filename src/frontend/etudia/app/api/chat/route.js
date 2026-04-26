@@ -36,8 +36,10 @@ export async function POST(req) {
     );
   }
 
+  const backendBaseUrl = process.env.ORIENTATION_API_URL;
+
   // Appel à ton backend FastAPI : message -> answer
-  const ragResponse = await fetch("http://127.0.0.1:8000/chat-orientation", {
+  const ragResponse = await fetch(`${backendBaseUrl}/chat-orientation`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

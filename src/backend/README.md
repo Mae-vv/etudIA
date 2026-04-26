@@ -125,6 +125,11 @@ expliquer au lycéen en quoi chaque suggestion colle à ses contraintes (type de
 
 La route Next.js `/api/chat` reste un adaptateur : elle reçoit la liste des messages du front, envoie le dernier message utilisateur à `/chat-orientation`, puis renvoie au front une réponse unique `{ "role": "assistant", "content": "<texte explicatif>" }` déjà enrichie par ces éléments de RAG.
 
+## Base de données
+
+- La connexion à Postgres se fait via la fonction get_pg_connection, qui lit d’abord DATABASE_URL si défini, sinon les variables PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD.
+- En prod (hébergeur), il suffit de définir DATABASE_URL au format postgresql://user:password@host:port/dbname
+
 ## Intégration front 
 ### Intégration avec le front Next.js
 

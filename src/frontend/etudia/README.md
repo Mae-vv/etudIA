@@ -43,6 +43,9 @@ Le backend Next.js expose une route API :
   - renvoie cette réponse sous forme de flux texte (streaming) au frontend.
 - **Sortie** : un flux `text/plain` qui est assemblé côté front pour créer un message AI.
 
+- La route Next `/api/chat` relaie les requêtes vers le backend FastAPI sur l’URL définie par ORIENTATION_API_URL (par exemple http://127.0.0.1:8000 en local, URL publique en prod).
+- Cela permet de changer d’environnement (local / déploiement) sans modifier le code, uniquement via les variables d’environnement.
+
 ## Chat d’orientation (cadrage éthique)
 
 Côté backend Python, l’API `/chat-orientation` :
