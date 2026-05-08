@@ -1,9 +1,8 @@
-# Old local E5 model version (kept as reference for future self-hosted deployment)
-# from sentence_transformers import SentenceTransformer
 from openai import OpenAI
 import numpy as np
 
 client = OpenAI()
+# Old local E5 model version (kept as reference for future self-hosted deployment)
 #_model = SentenceTransformer("intfloat/multilingual-e5-base")
 
 def get_query_embedding(question: str) -> np.ndarray:

@@ -1,11 +1,10 @@
 import pandas as pd
 from typing import List
-# Old local E5 model version (kept as reference for future self-hosted deployment)
-# from sentence_transformers import SentenceTransformer
 from openai import OpenAI
 import numpy as np
 import time
 
+# Old local E5 model version (kept as reference for future self-hosted deployment)
 #MODEL_NAME = "intfloat/multilingual-e5-base"
 client = OpenAI()
 

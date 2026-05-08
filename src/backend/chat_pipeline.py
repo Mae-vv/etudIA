@@ -1,7 +1,6 @@
 import json
 from openai import OpenAI
 from typing import Dict, Any, List
-#from sentence_transformers import SentenceTransformer
 
 from src.backend.profile_schema import StudentProfile
 from src.backend.profile_from_text import infer_profile_from_text
