@@ -1,136 +1,190 @@
 # Backend etudIA
+Ce dossier contient le code backend du projet etudIA : préparation des données Parcoursup, moteur de recommandation RAG, API d’orientation et intégration avec le front Next.js.
 
-Ce dossier contient le code backend du projet etudIa (préparation des données Parcoursup, API d’orientation, etc.).
+## Modules principaux
+- `processing.py` : Fonctions de chargement et de nettoyage du jeu de données « Cartographie des formations Parcoursup » (suppression de colonnes inutiles, renommage, filtrage par année, création de variables dérivées comme is_apprentissage, codes d’internat, aménagements, etc.).
 
-## Modules
+- `scraping.py` :
+Fonctions de récupération et de parsing des fiches formations externes (pages publiques Parcoursup) pour enrichir le dataset avec des champs textuels supplémentaires.
 
-- `processing.py` : fonctions de chargement et de nettoyage du jeu de données « Cartographie des formations Parcoursup ».
-- `scraping.py` : contient les fonctions de récupération et de parsing des fiches formations externes.
-Objectif : extraire quelques informations structurées (présentation, critères d’entrée, débouchés) pour enrichir le dataset Parcoursup.
-    - fetch_page(url) : télécharge le HTML d’une fiche formation publique Parcoursup.
-    - scrape_formation(url) : récupère une fiche puis renvoie un dictionnaire standardisé (presentation, criteres_entree, debouches_professionnels, frais_de_scolarite, frais_de_scolarite_boursiers, langue_options) prêt à être intégré au dataset.
-    - parse_formation_page(html) renvoie un dictionnaire standardisé regroupant la
-    présentation, les critères d’entrée (attendus, grille d’analyse), les débouchés, les frais
-    (scolarité et candidature), les langues/options, le nombre de places, le caractère sélectif
-    et le contrôle du diplôme par l’État, même si certains champs ne sont pas encore
-    implémentés dans la première version.
+  - `fetch_page(url)` : télécharge le HTML d’une fiche formation.
+  - `parse_formation_page(html)` : extrait un dictionnaire standardisé avec présentation, critères d’entrée, débouchés, poursuite d’études, frais de scolarité (boursiers / non boursiers), langues/options, nombre de places, caractère sélectif, contrôle du diplôme par l’État, etc.
+  - `scrape_formation(url)` : enchaîne téléchargement + parsing pour renvoyer un dictionnaire prêt à être fusionné avec le dataset Parcoursup.
+  - `enrich_with_scraping(df, ...)` : applique scrape_formation sur un DataFrame de formations pour ajouter ces colonnes.
 
-Les fonctions de traitement des données sont testées avec pytest.
-Exemple : filter_target_year est vérifiée sur un DataFrame de test pour s’assurer qu’elle ne conserve que la session cible.
+Les fonctions de traitement des données sont testées avec pytest (par exemple, filter_target_year est vérifiée sur un DataFrame de test pour garantir qu’elle ne conserve que la session cible).
 
-## Vectorisation
+## Vectorisation et préparation RAG
 
-### Préparation des chunks pour la base vectorielle
+### Chunking des documents
 
-Avant la création de la base vectorielle, le texte `rag_document` de chaque formation est découpé en segments plus courts (“chunks”).
+Avant la création de la base vectorielle, le texte `rag_document` de chaque formation est découpé en segments (“chunks”) plus courts.
 
-Cette étape est implémentée dans `src/backend/vector_store.py` :
+Ce comportement est implémenté dans `src/backend/vector_store.py` :
+- `chunk_rag_document(text, max_chars=2000)`
 
-- `chunk_rag_document(text, max_chars=2000)`  
-  - découpe un `rag_document` en plusieurs segments de texte consécutifs ;  
-  - la taille cible d’un chunk est de l’ordre de 1 500–2 000 caractères (≈ 500–800 tokens) ;  
-  - l’objectif est d’éviter des embeddings trop longs ou hétérogènes et d’améliorer la précision de la recherche sémantique.
+   - découpe le texte en segments consécutifs d’environ 1 500–2 000 caractères (≈ 500–800 tokens) ;
+   - objectif : éviter des embeddings trop longs ou hétérogènes, et améliorer la précision de la recherche sémantique.
 
-- `explode_chunks(df, text_col="rag_document", max_chars=2000)`  
-  - transforme un DataFrame de formations (1 ligne = 1 formation) en un DataFrame de chunks ;  
-  - chaque formation peut donner plusieurs lignes, une par chunk ;  
-  - toutes les métadonnées de la formation (type de formation, région, apprentissage, coûts, internat, aménagements, etc.) sont recopiées sur chaque chunk ;  
-  - deux colonnes supplémentaires sont ajoutées :  
-    - `chunk_index` : position du chunk dans le `rag_document` (0, 1, 2, …) ;  
-    - `chunk_id` : identifiant unique du chunk (par exemple combinaison de l’index de la formation et de `chunk_index`).  
+- `explode_chunks(df, text_col="rag_document", max_chars=2000)`
 
-Ce DataFrame “explosé” (une ligne par chunk) servira ensuite de base à la création des embeddings et à la construction de la future base vectorielle (une entrée par chunk, avec ses métadonnées).
+  - transforme un DataFrame de formations (1 ligne = 1 formation) en un DataFrame de chunks (1 ligne = 1 chunk) ;
+  - copie toutes les métadonnées utiles (type de formation, établissement, commune, apprentissage, frais, sélectivité, etc.) sur chaque chunk ;
+  - ajoute :
 
-### Base vectorielle et embeddings (v1)
+    - `chunk_index` : position du chunk dans le document (0, 1, 2, …) ;
+    - `chunk_id` : identifiant unique du chunk.
 
-Pour la première version de la base vectorielle, le projet utilise un modèle d’embedding open source de la famille multilingual‑e5 (Hugging Face, licence permissive). Ce modèle est spécialement entraîné pour la recherche sémantique multilingue et offre de bonnes performances sur le français.
+Ce DataFrame “explosé” sert ensuite de base pour le calcul des embeddings et la construction de la base vectorielle.
 
-Avant le choix du modèle, la longueur des chunks de ragdocument a été analysée : sur 29 026 chunks, la longueur maximale observée est d’environ 342 mots, avec une moyenne d’environ 104 mots, donc bien en‑dessous de la limite d’environ 512 tokens supportée par multilingual‑e5. Cela permet de vectoriser chaque chunk sans troncature.
+### Embeddings et vector store (version actuelle)
 
-Ce choix répond aussi à une contrainte de déploiement local : le modèle reste utilisable sur CPU dans un contexte étudiant, sans infrastructure GPU lourde, tout en restant cohérent avec les objectifs de souveraineté.
+La version actuellement déployée utilise les **embeddings OpenAI** :
+- modèle d’embedding : `text-embedding-3-small` (OpenAI), dimension **1536** ;
+- calcul des embeddings offline (notebook) via l’API OpenAI pour chaque `chunk_text` ;
+- stockage dans une colonne `embedding` de type `vector(1536)` dans Postgres (extension `pgvector`).
 
-À plus long terme, le projet pourra évoluer vers des modèles plus lourds mais plus puissants pour la recherche sémantique, comme BGE‑M3 ou des embeddings Qwen récents, hébergés sur GPU (par exemple via un fournisseur souverain type Albert API). Ces modèles gèrent des contextes plus longs (jusqu’à plusieurs milliers de tokens), ce qui serait pertinent si la taille des documents ou le volume de données augmente.
+Pipeline de préparation (notebook `13_full_vector_store.ipynb`) :
+1) Charger les données Parcoursup nettoyées.
+2) Appliquer `explode_chunks` pour obtenir un DataFrame de chunks.
+3) Appeler `build_vector_store(df_chunks)` dans `vector_store.py` :
+    - `embed_texts_batched(...)` appelle l’API OpenAI par batch pour calculer les embeddings.
+    - Le DataFrame `df_vs` contient `chunk_id`, `chunk_text`, métadonnées, `embedding`.
+4) Insérer / mettre à jour ces lignes dans la table `formations_chunks_vectors` via `upsert_chunks` (dans `pgvector_store.py`), en batch pour ne pas surcharger la base.
 
-## Base vectorielle pgvector (backend)
+### Base vectorielle pgvector (prod)
 
-- SGBD : PostgreSQL lancé via Docker, administré avec pgAdmin.  
-- Extension : `CREATE EXTENSION IF NOT EXISTS vector;` pour activer le type `vector` et l’opérateur `<=>` (cosinus).  
-- Schéma principal : table `formations_chunks_vectors` (`chunk_id` Primary Key, métadonnées de la formation, colonne `embedding vector(768)`).
-- Insertion côté Python : `src/backend/pgvector_store.py` expose `upsert_chunks(df_vs)` qui prend le DataFrame d’embeddings et fait un `INSERT ... ON CONFLICT (chunk_id) DO UPDATE`.
-- Première requête RAG : un notebook encode une question lycéen en embedding, puis interroge Postgres avec `ORDER BY embedding <=> query_vector LIMIT 3` pour récupérer les chunks les plus proches.
+En prod, la base vectorielle est hébergée sur Supabase :
+- SGBD : PostgreSQL managé par Supabase.
+- Extension : `CREATE EXTENSION IF NOT EXISTS vector;` pour activer le type vector et l’opérateur `<=>`.
+- Table principale : `formations_chunks_vectors`
+    - `chunk_id` (PRIMARY KEY)
+    - métadonnées : `chunk_index`, `chunk_text`, `type_formation`, `type_etablissement`, `commune`, `is_apprentissage`, `frais_scolarite`, `formation_selective`, `formation_ouverte_boursiers`, …
+    - `embedding vector(1536)` : vecteur OpenAI `text-embedding-3-small`.
 
-Le notebook `13_full_vector_store.ipynb` charge le csv `parcoursup_2026_enriched_chunks.csv`,
-chunk le texte avec `explode_chunks`, créé les embeddings e5 avec `build_vector_store` et insère le tout
-dans la table Postgres `formations_chunks_vectors` via `upsert_chunks`
+Insertion côté Python : `src/backend/pgvector_store.py` expose `upsert_chunks(df_vs, batch_size=...)` qui fait un `INSERT ... ON CONFLICT (chunk_id) DO UPDATE` par batch.
 
-## Moteur de recommandation RAG V1
+La connexion à la base se fait via `get_pg_connection()` qui lit :
+- en priorité `DATABASE_URL` (URI Postgres ou Session Pooler Supabase),
+- sinon les variables `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`.
 
-- `recommendation.py` : traduit un profil lycéen simplifié en filtres structurés (type de formation, etc.) et appelle la base pgvector pour récupérer les chunks les plus proches.
-- `recommend_from_profile(profile, query_embedding)` combine filtres SQL (`WHERE ...`) et similarité cosinus (`embedding <=> query_vector`) pour renvoyer une liste de formations.
-- Le notebook `12_reco_mvp.ipynb` illustre le fonctionnement sur quelques profils tests et questions en langage naturel.
+En prod (Render), on configure `DATABASE_URL` avec la chaîne de connexion Supabase.
 
-### API de recommandation RAG (V1)
+## Moteur de recommandation RAG
+### Profils lycéens structurés
 
-Le backend expose une première API HTTP pour accéder au moteur de recommandation RAG.
+- `profile_schema.py` définit `StudentProfile` (TypedDict) avec trois blocs :
+  - contraintes objectives : `type_formation`, `is_apprentissage`, `max_frais_scolarite`, `commune` ;
+  - intérêts et matières : `domains_interet`, `matieres_aimees`, `matieres_evitees` ;
+  - style de travail / rythme : `preference_rythme`, `preference_travail`, `niveau_idee_orientation`.
 
-- **Endpoint** : `POST /recommendations`
-- **Corps de requête (JSON)** :
-  - `question` : texte libre de la question d’un lycéen (ex. "Je veux un BUT informatique en apprentissage en Bretagne...").
-  - `profile` : objet JSON avec les contraintes structurées (ex. `typeformation`, `isapprentissage`, `maxfraisscolarite`, `region`, etc.).
-  - `limit` : entier optionnel, nombre maximum de formations renvoyées (par défaut : 5).
-- **Comportement** :
-  - la question est encodée en embedding (modèle `intfloat/multilingual-e5-base`),
-  - le profil est traduit en filtres via le moteur de recommandation (`recommend_from_profile`),
-  - une requête est faite vers la base Postgres/pgvector,
-  - l’API renvoie un JSON de la forme :
-    ```json
-    { "recommendations": [ ... ] }
-    ```
+- `profile_from_text.py` utilise `gpt-4o-mini` pour inférer un `StudentProfile` à partir d’un message libre :
+  - le LLM renvoie un JSON strict avec uniquement les clés du profil, sans interprétation psychologique ni inférences sensibles.
 
-### Chaîne d'orientation RAG + LLM
+### Recommandation avec filtres + similarité
 
-- `profile_schema.py` définit `StudentProfile`, un profil structuré de lycéen (préférences, contraintes).
-- `profile_from_text.py` utilise gpt-4o-mini pour inférer un `StudentProfile` à partir d'un message libre.
-- `recommendation.py` applique les filtres + RAG (pgvector) et renvoie des formations avec `reason` et `explanation`.
-- `chat_pipeline.py` orchestre message → StudentProfile → RAG → appel LLM conseiller pour produire une réponse textuelle.
+- `recommendation.py` :
+  - `build_filters_from_profile(profile)` traduit le profil en filtres SQL (`type_formation, is_apprentissage, max_frais_scolarite, commune` si possible).
+  - `recommend_from_profile(profile, query_embedding, limit)` :
+    - construit un `WHERE` SQL à partir des filtres,
+      - exécute une requête RAG sur `formations_chunks_vectors` :
+        - `ORDER BY embedding <=> (%s::vector)` (distance cosinus) pour classer les chunks,
+      - regroupe les résultats par `chunk_id` et conserve, pour chaque formation, le chunk le plus pertinent.
 
-## Filtres RAG et explications pour le chat (V2)
+Pour chaque formation retournée, la fonction ajoute :
+- un objet reason avec des indicateurs comme match_type_formation, match_apprentissage, under_budget ;
+- une phrase courte explanation en français, expliquant en quoi la formation correspond (type de diplôme, apprentissage, budget, etc.).
 
-La version actuelle du moteur de recommandation ne se limite plus à renvoyer des chunks “proches” sémantiquement : il combine des filtres structurés et des explications lisibles.
+Ces champs sont utilisés ensuite pour la transparence dans le chat.
 
-- `StudentProfile` (défini dans profile_schema.py) représente un profil lycéen structuré :
-contraintes objectives (type de formation souhaité, apprentissage ou non, budget maximal, commune/zone géographique),
-et champs plus souples (centres d’intérêt, matières appréciées, préférences de travail, etc.).
-- `recommend_from_profile(profile, query_embedding, limit)` utilise ce profil pour construire des filtres SQL sur la table formations_chunks_vectors (type de formation, apprentissage, frais de scolarité, localisation quand c’est possible), puis applique la similarité cosinus via pgvector pour classer les résultats.
+### Chaîne d’orientation RAG + LLM
+Le fichier chat_pipeline.py orchestre toute la chaîne :
 
-Pour chaque formation retournée, le backend ajoute :
-- un objet `reason` avec des booléens explicites (`match_type_formation`, `match_apprentissage`, `under_budget`, etc.) indiquant en quoi la formation respecte (ou non) les contraintes posées ;
-- une phrase courte `explanation` en français, synthétisant ces raisons (par exemple : “correspond au type de formation que tu recherches, propose de l’apprentissage comme tu le souhaites et respecte ton budget”).
+1) Profil structuré :
+infer_profile_from_text(message) (dans profile_from_text.py) transforme le message libre en StudentProfile.
+2) Embedding de la requête :
+get_query_embedding(message) (dans embeddings.py) encode la question en vecteur 1536 via text-embedding-3-small.
+3) Recommandations RAG :
+recommend_from_profile(profile, query_emb, limit) interroge Supabase/pgvector pour récupérer les formations pertinentes avec reason et explanation.
+4) Construction du contexte RAG :
+le code construit un rag_context contenant, pour chaque reco :
+    - type de formation, commune, frais,
+    - un extrait tronqué du texte de la fiche,
+    - explanation.
+5) Appel au LLM conseiller :
+call_llm_advisor(...) utilise gpt-4o-mini avec :
+    - un system_prompt centré sur l’orientation, les contraintes de neutralité et la transparence ;
+    - un message assistant contenant l’historique du chat (réformaté), le JSON du StudentProfile et la liste des formations (rag_context) ;
+    - le message utilisateur actuel.
 
-Ces champs `reason` et `explanation` servent de base à la transparence : ils permettent d’expliquer clairement sur quels critères objectifs la recommandation est faite, indépendamment du texte généré par le LLM.
+Le LLM doit :
+- s’appuyer uniquement sur les formations remontées par le RAG (pas d’invention de ville ou de diplôme) ;
+- expliquer en langage naturel pourquoi chaque suggestion colle au profil et aux contraintes (en s’appuyant sur explanation) ;
+- citer au plus 3 formations, avec une explication courte par formation ;
+- conclure en rappelant que ce sont des pistes à discuter avec un adulte/CO.
 
-Le moteur RAG passe maintenant au LLM, pour chaque reco, un petit extrait de contenu de la fiche Parcoursup (en plus des métadonnées et d’explanation).
-La longueur des réponses du conseiller est plafonnée à ~400 tokens pour garder des réponses détaillées mais contrôlées.
+La longueur des réponses est plafonnée à environ 400 tokens pour contrôler les coûts et garder des réponses lisibles.
 
-Intégration dans la chaîne de chat
+## API FastAPI
+Le backend expose deux endpoints principaux :
+- POST /recommendations
+    - Reçoit { "question": str, "profile": StudentProfile, "limit": int }.
+    - Encode la question en embedding, applique recommend_from_profile et renvoie :
+`json:
+{ "recommendations": [ ... ] }`
 
-La route backend `/chat-orientation` exploite désormais ces explications dans la réponse du chat :
-- `chat_pipeline.py` prend le message libre du lycéen, en déduit (directement ou via `profile_from_text.py`) un `StudentProfile`, appelle `recommend_from_profile`, puis construit un “contexte RAG” qui inclut les formations sélectionnées et leurs `explanation`.
+- POST /chat-orientation
+  - Reçoit { "message": str, "history": [ { "role": "...", "content": "..." }, ... ] }.
+  - Applique la chaîne complète (profil structuré + RAG + LLM conseiller).
+  - Renvoie :
+`json:
+{ "answer": "<texte explicatif pour le lycéen>" }`
 
-Ce contexte est injecté dans le prompt du LLM “conseiller”, qui doit :
+Des endpoints temporaires de debug (/health-db, /debug-db-url) peuvent être ajoutés ponctuellement pour vérifier la connexion à Supabase (non indispensables en prod).
 
-s’appuyer uniquement sur les formations fournies par le RAG ;
+## Intégration avec le front Next.js
+Côté front, la route Next.js `/api/chat` joue le rôle d’adaptateur :
+- lit la variable `ORIENTATION_API_URL` (par exemple http://127.0.0.1:8000 en local, ou l’URL Render en prod) ;
+- envoie le dernier message utilisateur et l’historique vers `/chat-orientation` du backend ;
+- renvoie au front un objet de la forme `{ "id": "<timestamp>", "role": "assistant", "content": "<answer>" }`.
 
-expliquer au lycéen en quoi chaque suggestion colle à ses contraintes (type de diplôme, apprentissage ou non, budget, localisation), en reprenant les explications calculées côté backend.
+L’interface de chat se contente d’afficher une liste de messages role / content en provenance de cette route.
 
-La route Next.js `/api/chat` reste un adaptateur : elle reçoit la liste des messages du front, envoie le dernier message utilisateur à `/chat-orientation`, puis renvoie au front une réponse unique `{ "role": "assistant", "content": "<texte explicatif>" }` déjà enrichie par ces éléments de RAG.
+## Déploiement (actuel)
+- Backend FastAPI : déployé sur Render (plan gratuit 512 Mo), auto‑deploy depuis GitHub.
+  - Commande de démarrage : `uvicorn src.backend.api:app --host 0.0.0.0 --port 8000`.
+  - Variable d’environnement critique :
+    - `DATABASE_URL` = URI Postgres/Session Pooler Supabase.
+    - `OPENAI_API_KEY` pour les embeddings et le LLM.
 
-## Base de données
+- **Base de données** : projet Supabase (plan gratuit) hébergeant :
+  - la table formations_chunks_vectors avec embedding vector(1536) ;
+  - la connexion se fait via psycopg2 dans pgvector_store.py.
 
-- La connexion à Postgres se fait via la fonction get_pg_connection, qui lit d’abord DATABASE_URL si défini, sinon les variables PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD.
-- En prod (hébergeur), il suffit de définir DATABASE_URL au format postgresql://user:password@host:port/dbname
+## Pistes d’évolution pour plus de souveraineté
+Actuellement, le backend dépend :
+- d’OpenAI pour les embeddings (text-embedding-3-small) et le LLM (gpt-4o-mini) ;
+- de Supabase (Postgres managé) pour la base vectorielle.
 
-## Intégration front 
-### Intégration avec le front Next.js
+Pour renforcer la souveraineté et réduire la dépendance à des services propriétaires, plusieurs évolutions sont possibles :
 
-Le backend expose un endpoint `POST /chat-orientation` (FastAPI) qui reçoit un message utilisateur sous la forme `{ "message": "<texte>" }` et renvoie une réponse structurée `{ "answer": "<réponse générée par le RAG>" }`. Ce backend est consommé par le front Next.js via la route intermédiaire `/api/chat` (côté Next), qui joue le rôle d’adaptateur : elle récupère les messages envoyés depuis l’interface, extrait le dernier message utilisateur, appelle `http://127.0.0.1:8000/chat-orientation`, puis renvoie au front un objet simplifié `{ "id": "<timestamp>", "role": "assistant", "content": "<answer>" }`. L’interface de chat affiche ensuite les échanges en s’appuyant uniquement sur ces champs `role` et `content`.
+1) Revenir à des embeddings open‑source self‑hosted
+  - Réactiver l’ancienne version basée sur multilingual-e5-base (Hugging Face, open‑source) via SentenceTransformer.
+  - Héberger ce modèle sur un serveur (ou un conteneur Docker) dédié, éventuellement chez un fournisseur européen.
+  - Recalculer les embeddings des chunks avec ce modèle et repasser la colonne embedding à la dimension E5 (768).
+
+2) Self‑host de la base Postgres / pgvector
+  - Remplacer Supabase par un Postgres+pgvector auto‑hébergé (Docker sur un VPS européen), en réutilisant pgvector_store.py tel quel.
+  - Adapter DATABASE_URL pour pointer vers ce serveur plutôt que Supabase.
+  - Se diriger vers Scalingo qui est hébergé sur Scaleway pour le déploiement du projet (frontend, backend et vector store).
+
+3) LLM souverain / open‑source
+  - Remplacer gpt-4o-mini par un LLM open‑source (par exemple Mistral ou Qwen) exposé via une API compatible (/v1/chat/completions) ou via un fournisseur européen.
+  - Adapter profile_from_text.py et call_llm_advisor pour appeler ce nouveau modèle au lieu de l’API OpenAI.
+
+4) Séparation claire des chemins “cloud” et “self‑host”
+  - Garder dans le code deux implémentations parallèles :
+    - un chemin “cloud” (OpenAI + Supabase, pratique pour le MVP et les démos) ;
+    - un chemin “souverain” (embeddings E5 + Postgres auto‑hébergé + LLM open‑source), activable via une variable d’environnement ou un flag de configuration.
+
+Ces pistes pourront être détaillées dans le mémoire comme des axes d’industrialisation future, tout en montrant que l’architecture actuelle reste compatible avec une migration vers plus de souveraineté.
