@@ -37,3 +37,23 @@ def chat_orientation(req: ChatRequest):
     """
     answer = student_orientation(req.message, req.history)
     return {"answer": answer}
+
+import os
+from src.backend.pgvector_store import get_pg_connection
+
+@app.get("/debug-db-url")
+def debug_db_url():
+    return {"DATABASE_URL": os.getenv("DATABASE_URL")}
+
+@app.get("/health-db")
+def health_db():
+    try:
+        conn = get_pg_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT 1;")
+        cur.fetchone()
+        cur.close()
+        conn.close()
+        return {"db": "ok"}
+    except Exception as e:
+        return {"db": "error", "detail": str(e)}
