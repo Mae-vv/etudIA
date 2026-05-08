@@ -1,11 +1,12 @@
 import json
 from openai import OpenAI
 from typing import Dict, Any, List
-from sentence_transformers import SentenceTransformer
+#from sentence_transformers import SentenceTransformer
 
 from src.backend.profile_schema import StudentProfile
 from src.backend.profile_from_text import infer_profile_from_text
 from src.backend.recommendation import recommend_from_profile
+from src.backend.embeddings import get_query_embedding
 
 # Old local E5 model version (kept as reference for future self-hosted deployment)
 # model = SentenceTransformer("intfloat/multilingual-e5-base")
@@ -38,7 +39,8 @@ def student_orientation(message: str, history: List[Dict[str, Any]]) -> str:
     profile: StudentProfile = infer_profile_from_text(message)
 
     # 2) Embedding pour le RAG
-    query_emb = model.encode(message, normalize_embeddings=True)
+    # Old way query_emb = model.encode(message, normalize_embeddings=True)
+    query_emb = get_query_embedding(message)
 
     # 3) Recommandations RAG
     recos: List[Dict[str, Any]] = recommend_from_profile(profile, query_emb, limit=3)
