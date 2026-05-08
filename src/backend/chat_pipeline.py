@@ -122,7 +122,7 @@ def call_llm_advisor(
 
     # Résumé du profil et des recos pour le modèle
     profile_json = json.dumps(profile, ensure_ascii=False)
-    rag_json = json.dumps(rag_context, ensure_ascii=False)
+    rag_json = json.dumps(rag_context, ensure_ascii=False, default=str)
 
     context_parts = []
     if history_text.strip():
