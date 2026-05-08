@@ -15,4 +15,3 @@ def get_query_embedding(question: str) -> np.ndarray:
     )
     emb = resp.data[0].embedding
     return np.array(emb, dtype=float)
-    #return _model.encode(question, normalize_embeddings=True)
