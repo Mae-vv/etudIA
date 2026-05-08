@@ -43,7 +43,7 @@ def clean_frais(value):
     num = float(m.group(1).replace(',', '.'))
     return int(round(num))
 
-def upsert_chunks(df_vs: pd.DataFrame) -> None:
+def upsert_chunks(df_vs, batch_size: int = 1000) -> None:
     """
     Insère ou met à jour les chunks et leurs embeddings
     dans la table formations_chunks_vectors.
@@ -58,7 +58,11 @@ def upsert_chunks(df_vs: pd.DataFrame) -> None:
     conn = get_pg_connection()
     cur = conn.cursor()
 
-    rows = []
+    print("Début upsert_chunks, nb lignes:", len(df_vs))
+
+    rows_batch = []
+    total = 0
+
     for _, row in df_vs.iterrows():
         emb = row["embedding"]
 
@@ -66,7 +70,7 @@ def upsert_chunks(df_vs: pd.DataFrame) -> None:
         if isinstance(emb, np.ndarray):
             emb = emb.tolist()
 
-        rows.append((
+        rows_batch.append((
             row["chunk_id"],
             int(row["chunk_index"]),
             row["chunk_text"],
@@ -80,22 +84,48 @@ def upsert_chunks(df_vs: pd.DataFrame) -> None:
             emb,
         ))
 
-    execute_values(
-        cur,
-        """
-        INSERT INTO formations_chunks_vectors
-        (chunk_id, chunk_index, chunk_text,
-         type_formation, type_etablissement, commune,
-         is_apprentissage, frais_scolarite,
-         formation_selective, formation_ouverte_boursiers,
-         embedding)
-        VALUES %s
-        ON CONFLICT (chunk_id) DO UPDATE
-        SET embedding = EXCLUDED.embedding
-        """,
-        rows,
-    )
+        if len(rows_batch) >= batch_size:
+            print("Envoi d'un batch de", len(rows_batch))
+            execute_values(
+                cur,
+                """
+                INSERT INTO formations_chunks_vectors
+                (chunk_id, chunk_index, chunk_text,
+                 type_formation, type_etablissement, commune,
+                 is_apprentissage, frais_scolarite,
+                 formation_selective, formation_ouverte_boursiers,
+                 embedding)
+                VALUES %s
+                ON CONFLICT (chunk_id) DO UPDATE
+                SET embedding = EXCLUDED.embedding
+                """,
+                rows_batch,
+            )
+            conn.commit()
+            total += len(rows_batch)
+            rows_batch = []
+
+    if rows_batch:
+        print("Envoi dernier batch de", len(rows_batch))
+        execute_values(
+            cur,
+            """
+            INSERT INTO formations_chunks_vectors
+            (chunk_id, chunk_index, chunk_text,
+            type_formation, type_etablissement, commune,
+            is_apprentissage, frais_scolarite,
+            formation_selective, formation_ouverte_boursiers,
+            embedding)
+            VALUES %s
+            ON CONFLICT (chunk_id) DO UPDATE
+            SET embedding = EXCLUDED.embedding
+            """,
+            rows_batch,
+        )
 
     conn.commit()
+    total += len(rows_batch)
+
+    print(f"Upsert terminé, {total} lignes traitées.")
     cur.close()
     conn.close()

@@ -7,7 +7,8 @@ from src.backend.profile_schema import StudentProfile
 from src.backend.profile_from_text import infer_profile_from_text
 from src.backend.recommendation import recommend_from_profile
 
-model = SentenceTransformer("intfloat/multilingual-e5-base")
+# Old local E5 model version (kept as reference for future self-hosted deployment)
+# model = SentenceTransformer("intfloat/multilingual-e5-base")
 client = OpenAI()
 
 def format_history_for_llm(history: List[Dict[str, Any]]) -> str:
