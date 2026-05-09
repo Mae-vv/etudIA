@@ -18,6 +18,34 @@ bun dev
 
 L’application est accessible sur [http://localhost:3000](http://localhost:3000).
 
+## Déploiement en production
+
+Le frontend est déployé sur Vercel.
+
+- Domaine de production : `https://etudia-pearl.vercel.app`
+- Branche déployée : `main`
+- Framework preset : Next.js (App Router)
+- Root directory : `src/frontend/etudia`
+
+La route `/api/chat` utilise la variable d’environnement **ORIENTATION_API_URL** pour appeler le backend FastAPI (Render).  
+En production, ORIENTATION_API_URL pointe vers l’URL publique du backend, par exemple :
+
+- `https://etudia-backend.onrender.com`
+
+### Variables d’environnement (frontend)
+
+| Nom                  | Utilisation                                   | Exemple local                        |
+|----------------------|-----------------------------------------------|--------------------------------------|
+| `ORIENTATION_API_URL` | URL du backend FastAPI `/chat-orientation`   | `http://127.0.0.1:8000`              |
+
+En local, créer un fichier `.env.local` dans `src/frontend/etudia` :
+
+```bash
+ORIENTATION_API_URL=http://127.0.0.1:8000
+```
+
+Sur Vercel, la même variable est définie dans **Settings → Environment Variables** (environnement Production) avec l’URL Render.
+
 ## Interface de chat
 
 La page principale `app/page.js` affiche une interface de chat simple (messages **User** / **AI**) qui :

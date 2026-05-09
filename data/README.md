@@ -173,3 +173,14 @@ Ce fichier de chunks sert de point de départ pour calculer les embeddings et co
 à l’aide d’embeddings.
 - Étape 5 : génération d’une réponse expliquant les formations proposées, en mentionnant explicitement
 les critères utilisés (coût, localisation, sélectivité, poursuites d’études, etc.).
+
+## 6. Lien avec la base pgvector (DB)
+
+Les fichiers préparés servent de source à la base vectorielle utilisée en production :
+
+- `parcoursup_2026_enriched_chunks.csv` est chargé par le script backend (`src/backend/vector_store.py` / `pgvector_store.py`) pour :
+  - calculer les embeddings (`chunk_text` → vecteurs),
+  - insérer chaque chunk et ses métadonnées dans la table Postgres/pgvector.
+- La base pgvector est ensuite interrogée par l’API FastAPI `/chat-orientation` pour récupérer les formations pertinentes à chaque question (filtres structurés + similarité de `chunk_text`).
+
+Ainsi, **ce dossier `src/data` est la “source de vérité”** pour les données Parcoursup, et la DB n’en est qu’un dérivé optimisé pour la recherche.
