@@ -37,6 +37,7 @@ export async function POST(req) {
   }
 
   const backendBaseUrl = process.env.ORIENTATION_API_URL;
+  console.log("ORIENTATION_API_URL in /api/chat:", backendBaseUrl);
 
   // Appel à ton backend FastAPI : message -> answer
   const ragResponse = await fetch(`${backendBaseUrl}/chat-orientation`, {
