@@ -1,10 +1,17 @@
-from sentence_transformers import SentenceTransformer
+from openai import OpenAI
 import numpy as np
 
-_model = SentenceTransformer("intfloat/multilingual-e5-base")
+client = OpenAI()
+# Old local E5 model version (kept as reference for future self-hosted deployment)
+#_model = SentenceTransformer("intfloat/multilingual-e5-base")
 
 def get_query_embedding(question: str) -> np.ndarray:
     """
     Encode une question de lycéen en embedding normalisé pour le RAG.
     """
-    return _model.encode(question, normalize_embeddings=True)
+    resp = client.embeddings.create(
+        model="text-embedding-3-small",
+        input=[question],
+    )
+    emb = resp.data[0].embedding
+    return np.array(emb, dtype=float)

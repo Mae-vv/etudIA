@@ -1,13 +1,14 @@
 import json
 from openai import OpenAI
 from typing import Dict, Any, List
-from sentence_transformers import SentenceTransformer
 
 from src.backend.profile_schema import StudentProfile
 from src.backend.profile_from_text import infer_profile_from_text
 from src.backend.recommendation import recommend_from_profile
+from src.backend.embeddings import get_query_embedding
 
-model = SentenceTransformer("intfloat/multilingual-e5-base")
+# Old local E5 model version (kept as reference for future self-hosted deployment)
+# model = SentenceTransformer("intfloat/multilingual-e5-base")
 client = OpenAI()
 
 def format_history_for_llm(history: List[Dict[str, Any]]) -> str:
@@ -37,7 +38,8 @@ def student_orientation(message: str, history: List[Dict[str, Any]]) -> str:
     profile: StudentProfile = infer_profile_from_text(message)
 
     # 2) Embedding pour le RAG
-    query_emb = model.encode(message, normalize_embeddings=True)
+    # Old way query_emb = model.encode(message, normalize_embeddings=True)
+    query_emb = get_query_embedding(message)
 
     # 3) Recommandations RAG
     recos: List[Dict[str, Any]] = recommend_from_profile(profile, query_emb, limit=3)
@@ -45,11 +47,15 @@ def student_orientation(message: str, history: List[Dict[str, Any]]) -> str:
     # 4) Préparer le contexte à donner au LLM "conseiller"
     rag_context: List[Dict[str, Any]] = []
     for r in recos:
+        text = r.get("chunk_text") or ""
+        short_text = text[:500]
+
         rag_context.append({
             "type_formation": r["type_formation"],
             "commune": r["commune"],
             "frais_scolarite": r["frais_scolarite"],
             "explanation": r.get("explanation"),
+            "content": short_text,
         })
 
     # 5) Historique récent mis en forme pour le LLM
@@ -79,7 +85,8 @@ def call_llm_advisor(
     """
     system_prompt = (
         "Tu es un assistant d'orientation pour lycéens.\n"
-        "Tu t'appuies UNIQUEMENT sur les formations fournies dans le contexte JSON.\n"
+        "Tu t'appuies UNIQUEMENT sur le profil structuré de l'élève, "
+        "l'historique récent du chat et les formations fournies dans le contexte JSON.\n"
         "Tu ne dois JAMAIS inventer de formation, de ville ou de détail qui n'y figure pas.\n"
         "Tu restes neutre et tu n'infères jamais l'origine, le genre, "
         "la personnalité ou le niveau social.\n"
@@ -88,16 +95,23 @@ def call_llm_advisor(
         "de l'élève (par exemple : d'abord la santé, puis l'envie d'ajouter "
         "l'informatique). Tu dois chercher à COMBINER ces intérêts autant que possible, "
         "et non à remplacer le premier par le dernier.\n"
+        "Prends aussi en compte son rythme de vie et ses contraintes éventuelles "
+        "(par exemple pratique sportive intensive, préférence pour le matin, budget, etc.) "
+        "lorsque tu expliques pourquoi une formation peut lui convenir.\n"
         "Si aucune formation ne combine clairement tous les intérêts ou contraintes, "
         "explique-le honnêtement et précise en quoi chaque formation répond seulement "
         "à une partie de la demande.\n"
+        "\n"
+        "Lorsque plusieurs formations sont pertinentes, privilégie les formations publiques "
+        "ou à frais de scolarité modérés, sauf si le contexte indique explicitement "
+        "qu'un établissement privé est recherché.\n"
         "\n"
         "Tu peux citer au maximum 3 formations différentes.\n"
         "Pour chaque formation que tu cites :\n"
         "- résume en 1 à 2 phrases ce qu'on y apprend et les compétences développées ;\n"
         "- explique pourquoi elle correspond au profil et aux échanges récents "
         "(matières aimées ou difficiles, centres d'intérêt, souhait d'apprentissage, "
-        "contraintes éventuelles) en t'appuyant sur le champ 'explanation' fourni ;\n"
+        "contraintes éventuelles, rythme de vie) en t'appuyant sur le champ 'explanation' fourni ;\n"
         "- ne parle pas de critères (comme les frais, la sélectivité, la distance) "
         "s'ils ne sont pas mentionnés dans le contexte ou l'explication.\n"
         "\n"
@@ -110,7 +124,7 @@ def call_llm_advisor(
 
     # Résumé du profil et des recos pour le modèle
     profile_json = json.dumps(profile, ensure_ascii=False)
-    rag_json = json.dumps(rag_context, ensure_ascii=False)
+    rag_json = json.dumps(rag_context, ensure_ascii=False, default=str)
 
     context_parts = []
     if history_text.strip():
@@ -140,7 +154,7 @@ def call_llm_advisor(
             {"role": "assistant", "content": context_message},
             {"role": "user", "content": message},
         ],
-        max_output_tokens=300,  # contrôle du coût
+        max_output_tokens=400,  # contrôle du coût
     )
 
     answer = response.output[0].content[0].text

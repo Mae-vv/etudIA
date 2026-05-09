@@ -1,17 +1,30 @@
 import pandas as pd
 from typing import List
-from sentence_transformers import SentenceTransformer
+from openai import OpenAI
 import numpy as np
+import time
 
-MODEL_NAME = "intfloat/multilingual-e5-base"
+# Old local E5 model version (kept as reference for future self-hosted deployment)
+#MODEL_NAME = "intfloat/multilingual-e5-base"
+client = OpenAI()
 
-def load_embedding_model() -> SentenceTransformer:
+# def load_embedding_model() -> OpenAI:
+#     """
+#     Charge le modèle d'embedding (V1 : multilingual-e5).
+#     Le modèle est téléchargé automatiquement depuis Hugging Face
+#     lors du premier appel, puis mis en cache localement.
+#     """
+#     return SentenceTransformer(MODEL_NAME)
+
+def embed_texts(texts: list[str]) -> list[list[float]]:
     """
-    Charge le modèle d'embedding (V1 : multilingual-e5).
-    Le modèle est téléchargé automatiquement depuis Hugging Face
-    lors du premier appel, puis mis en cache localement.
+    Calcule les embeddings OpenAI pour une liste de textes.
     """
-    return SentenceTransformer(MODEL_NAME)
+    resp = client.embeddings.create(
+        model="text-embedding-3-small",
+        input=texts,
+    )
+    return [d.embedding for d in resp.data]
 
 def chunk_rag_document(text: str, max_chars: int = 2000) -> List[str]:
     """
@@ -86,6 +99,22 @@ def explode_chunks(df: pd.DataFrame,
             rows.append(new_row)
     return pd.DataFrame(rows).reset_index(drop=True)
 
+
+def embed_texts_batched(texts: list[str], batch_size: int = 32) -> list[list[float]]:
+    all_embeddings: list[list[float]] = []
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i : i + batch_size]
+        resp = client.embeddings.create(
+            model="text-embedding-3-small",
+            input=batch,
+        )
+        all_embeddings.extend([d.embedding for d in resp.data])
+
+        # petite pause pour ne pas saturer la limite par minute
+        time.sleep(0.3)
+    return all_embeddings
+
+
 def build_vector_store(df_chunks: pd.DataFrame) -> pd.DataFrame:
     """
     Crée une base vectorielle minimale à partir du DataFrame de chunks.
@@ -130,10 +159,9 @@ def build_vector_store(df_chunks: pd.DataFrame) -> pd.DataFrame:
     ]
 
     df_vs = df_chunks[cols_metadata].copy()
-    model = load_embedding_model()
 
     texts = df_vs["chunk_text"].fillna("").astype(str).tolist()
-    embeddings = model.encode(texts, normalize_embeddings=True)
+    embeddings = embed_texts_batched(texts, batch_size=64)
 
     df_vs["embedding"] = list(embeddings)
     

@@ -122,8 +122,9 @@ export default function Chat() {
       {/* Zone “footer” avec barre + input */}
       <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md px-2 pb-2 bg-transparent">
         {isRequesting && (
-          <div className="w-full h-2 bg-zinc-200 rounded mb-2 overflow-hidden">
-            <div className="h-2 bg-blue-500 animate-pulse w-2/5 rounded" />
+          <div className="flex items-center gap-2 mb-2 text-sm text-zinc-500">
+            <div className="h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <span>Je réfléchis...</span>
           </div>
         )}
 
