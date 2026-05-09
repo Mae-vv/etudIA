@@ -16,6 +16,15 @@ Les fonctions de traitement des données sont testées avec pytest (par exemple,
 
 ## Vectorisation et préparation RAG
 
+### Données Parcoursup et préparation RAG
+
+Les jeux de données d’entrée, le pipeline de nettoyage et la préparation de `rag_document`
+sont documentés dans `src/data/README.md`.
+
+La base pgvector utilisée par le backend est construite à partir de :
+- `parcoursup_2026_enriched_rag.csv`
+- `parcoursup_2026_enriched_chunks.csv`
+
 ### Chunking des documents
 
 Avant la création de la base vectorielle, le texte `rag_document` de chaque formation est découpé en segments (“chunks”) plus courts.
