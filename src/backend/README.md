@@ -132,7 +132,7 @@ Le LLM doit :
 - citer au plus 3 formations, avec une explication courte par formation ;
 - conclure en rappelant que ce sont des pistes à discuter avec un adulte/CO.
 
-La longueur des réponses est plafonnée à environ 400 tokens pour contrôler les coûts et garder des réponses lisibles.
+La longueur des réponses est plafonnée à environ 600 tokens pour contrôler les coûts et garder des réponses lisibles.
 
 ## API FastAPI
 Le backend expose deux endpoints principaux :

@@ -154,7 +154,7 @@ def call_llm_advisor(
             {"role": "assistant", "content": context_message},
             {"role": "user", "content": message},
         ],
-        max_output_tokens=400,  # contrôle du coût
+        max_output_tokens=600,  # contrôle du coût
     )
 
     answer = response.output[0].content[0].text
