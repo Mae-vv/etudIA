@@ -1,3 +1,4 @@
+// This file was partially generated with the help of an AI assistant.
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -13,19 +14,20 @@ export default function Chat() {
     if (bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);
+  });
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (!input.trim()) return;
 
+    const messageId = Date.now().toString();
     const userMessage = {
-      id: Date.now().toString() + "-user",
+      id: `${messageId}-user`,
       role: "user",
       content: input,
     };
 
-    const assistantId = Date.now().toString() + "-assistant";
+    const assistantId = `${messageId}-assistant`;
 
     // Ajout immédiat du message user + placeholder assistant
     setMessages((prev) => [
@@ -82,9 +84,7 @@ export default function Chat() {
 
           setMessages((prev) =>
             prev.map((m) =>
-              m.id === assistantId
-                ? { ...m, content: m.content + chunk }
-                : m,
+              m.id === assistantId ? { ...m, content: m.content + chunk } : m,
             ),
           );
         }
@@ -97,8 +97,7 @@ export default function Chat() {
           m.id === assistantId
             ? {
                 ...m,
-                content:
-                  "Je n'ai pas pu générer la réponse (erreur réseau).",
+                content: "Je n'ai pas pu générer la réponse (erreur réseau).",
               }
             : m,
         ),
@@ -106,37 +105,122 @@ export default function Chat() {
     }
   }
 
+  function handleReset() {
+    setMessages([]);
+    setInput("");
+  }
+
   console.log("Messages côté front :", messages);
 
   return (
-    <div className="flex flex-col w-full max-w-md py-24 mx-auto stretch">
-      {/* Liste des messages */}
-      {messages.map((message) => (
-        <div key={message.id} className="whitespace-pre-wrap mb-2">
-          {message.role === "user" ? "User: " : "AI: "}
-          <div>{message.content}</div>
+    <div className="min-h-screen bg-[#f6f6f6] text-[#161616]">
+      <header className="fixed inset-x-0 top-0 z-20 border-b border-[#dddddd] bg-white">
+        <div className="mx-auto flex min-h-16 w-full max-w-5xl flex-col justify-center px-4 py-3 sm:px-6">
+          <p className="text-lg font-bold leading-6 text-[#000091]">etudIA</p>
+          <p className="mt-1 text-xs leading-5 text-[#666666] sm:text-sm">
+            Assistant d'orientation pour explorer des pistes, sans remplacer
+            Parcoursup ni les sources officielles.
+          </p>
         </div>
-      ))}
-      <div ref={bottomRef} />
+      </header>
 
-      {/* Zone “footer” avec barre + input */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md px-2 pb-2 bg-transparent">
-        {isRequesting && (
-          <div className="flex items-center gap-2 mb-2 text-sm text-zinc-500">
-            <div className="h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            <span>Je réfléchis...</span>
-          </div>
-        )}
+      <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 pt-24 pb-36 sm:px-6 sm:pb-32">
+        <section
+          aria-label="Conversation avec etudIA"
+          aria-live="polite"
+          className="flex flex-1 flex-col gap-4 overflow-y-auto"
+        >
+          {messages.length === 0 && (
+            <div className="mx-auto flex flex-1 items-center justify-center py-12 text-center">
+              <p className="max-w-md text-sm leading-6 text-[#666666] sm:text-base">
+                Pose ta question d'orientation pour commencer la conversation.
+                etudIA peut t'aider à explorer des pistes, mais ne remplace pas
+                Parcoursup ni les sources officielles.
+              </p>
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit}>
-          <input
-            className="w-full dark:bg-zinc-900 p-2 border border-zinc-300 dark:border-zinc-800 rounded shadow-xl"
-            value={input}
-            placeholder="Parle-moi de ta situation d’orientation…"
-            onChange={(e) => setInput(e.currentTarget.value)}
-          />
-        </form>
-      </div>
+          {messages.map((message) => {
+            const isUser = message.role === "user";
+
+            return (
+              <article
+                className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}
+                key={message.id}
+              >
+                <div
+                  className={`max-w-[88%] rounded-sm border px-4 py-3 text-sm leading-6 shadow-sm sm:max-w-[72%] sm:px-5 sm:py-4 sm:text-base ${
+                    isUser
+                      ? "border-[#000091] bg-[#000091] text-white"
+                      : "border-[#dddddd] bg-white text-[#161616]"
+                  }`}
+                >
+                  <p
+                    className={`mb-1 text-xs font-semibold uppercase tracking-[0.04em] ${
+                      isUser ? "text-[#f5f5ff]" : "text-[#000091]"
+                    }`}
+                  >
+                    {isUser ? "Toi" : "etudIA"}
+                  </p>
+                  <div className="whitespace-pre-wrap">
+                    {message.content ||
+                      (!isUser && isRequesting
+                        ? "etudIA prépare une réponse..."
+                        : "")}
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+
+          <div ref={bottomRef} />
+        </section>
+      </main>
+
+      <footer className="fixed inset-x-0 bottom-0 z-20 border-t border-[#d9d9d9] bg-white px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] sm:px-6">
+        <div className="mx-auto w-full max-w-5xl">
+          {isRequesting && (
+            <div className="mb-2 flex items-center gap-2 text-sm text-[#3a3a3a]">
+              <span
+                aria-hidden="true"
+                className="h-4 w-4 animate-spin rounded-full border-2 border-[#000091] border-t-transparent"
+              />
+              <span>etudIA prépare une réponse...</span>
+            </div>
+          )}
+
+          <form
+            className="grid gap-2 sm:grid-cols-[auto_1fr_auto] sm:items-center"
+            onSubmit={handleSubmit}
+          >
+            <button
+              className="min-h-11 rounded-sm border border-[#c9c9d8] bg-white px-4 py-2 text-sm font-semibold text-[#000091] transition hover:bg-[#f6f6ff] focus:outline-none focus:ring-2 focus:ring-[#000091] focus:ring-offset-2 disabled:cursor-not-allowed disabled:text-[#929292]"
+              disabled={isRequesting || messages.length === 0}
+              onClick={handleReset}
+              type="button"
+            >
+              Nouvelle conversation
+            </button>
+            <label className="sr-only" htmlFor="orientation-message">
+              Message à envoyer à etudIA
+            </label>
+            <input
+              className="min-h-11 w-full rounded-sm border border-[#bcbcbc] bg-white px-3 py-2 text-base text-[#161616] outline-none placeholder:text-[#777777] focus:border-[#000091] focus:ring-2 focus:ring-[#000091]/20"
+              id="orientation-message"
+              onChange={(e) => setInput(e.currentTarget.value)}
+              placeholder="Pose ta question d'orientation..."
+              value={input}
+            />
+            <button
+              className="min-h-11 rounded-sm bg-[#000091] px-5 py-2 text-base font-semibold text-white transition hover:bg-[#1212ff] focus:outline-none focus:ring-2 focus:ring-[#000091] focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#eeeeee] disabled:text-[#929292]"
+              disabled={isRequesting || !input.trim()}
+              type="submit"
+            >
+              Envoyer
+            </button>
+          </form>
+        </div>
+      </footer>
     </div>
   );
 }
