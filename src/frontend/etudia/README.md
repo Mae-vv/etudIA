@@ -89,10 +89,9 @@ Côté backend Python, l’API `/chat-orientation` :
 
 Les prompts ne contiennent aucune information identifiante (pas de nom, mail, etc.) afin de limiter les risques de confidentialité.
 
-## À venir
+## UI co‑construite avec une IA
 
-Les prochaines évolutions prévues côté frontend sont :
+L’interface de chat d’etudIA est en partie conçue avec l’aide d’un assistant de développement basé sur l’IA.
 
-- mieux mettre en forme les justifications de recommandations (explications par formation),
-- consommer de façon plus structurée les métadonnées renvoyées par le backend (type de formation, ville, budget, apprentissage),
-- préparer l’intégration avec un déploiement sur Vercel.
+- La spécification utilisée pour guider l’assistant se trouve dans `etudia/.agent/agent_specs.md`.
+- Tout le code généré est relu et adapté avant d’être intégré au projet.
