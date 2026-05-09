@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 export default function Chat() {
   const [input, setInput] = useState("");
@@ -162,12 +163,18 @@ export default function Chat() {
                   >
                     {isUser ? "Toi" : "etudIA"}
                   </p>
-                  <div className="whitespace-pre-wrap">
-                    {message.content ||
-                      (!isUser && isRequesting
-                        ? "etudIA prépare une réponse..."
-                        : "")}
-                  </div>
+                  {isUser ? (
+                    <div className="whitespace-pre-wrap">
+                      {message.content}
+                    </div>
+                  ) : (
+                    <div className="whitespace-pre-wrap">
+                      <ReactMarkdown>
+                        {message.content ||
+                          (isRequesting ? "etudIA prépare une réponse..." : "")}
+                      </ReactMarkdown>
+                    </div>
+                  )}
                 </div>
               </article>
             );
