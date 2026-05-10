@@ -8,7 +8,11 @@ export default function Chat() {
   const [input, setInput] = useState("");
   const [isRequesting, setIsRequesting] = useState(false);
   const [messages, setMessages] = useState([]);
+  const [pendingSeconds, setPendingSeconds] = useState(0);
+  const [lastDuration, setLastDuration] = useState(null);
   const bottomRef = useRef(null);
+  const timerRef = useRef(null);
+  const startRef = useRef(null);
 
   // Auto-scroll dès que messages change
   useEffect(() => {
@@ -17,11 +21,22 @@ export default function Chat() {
     }
   });
 
+  useEffect(() => {
+    if (!isRequesting) return;
+    setPendingSeconds(0);
+    startRef.current = Date.now();
+    timerRef.current = window.setInterval(() => {
+      setPendingSeconds(Math.max(0, Math.floor((Date.now() - startRef.current) / 1000)));
+    }, 1000);
+    return () => window.clearInterval(timerRef.current);
+  }, [isRequesting]);
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (!input.trim()) return;
 
-    const messageId = Date.now().toString();
+    const t0 = Date.now();
+    const messageId = t0.toString();
     const userMessage = {
       id: `${messageId}-user`,
       role: "user",
@@ -90,6 +105,8 @@ export default function Chat() {
           );
         }
       }
+      const elapsed = (Date.now() - t0) / 1000;
+      setLastDuration(elapsed);
     } catch (err) {
       console.error("Erreur réseau /api/chat :", err);
       setIsRequesting(false);
@@ -109,6 +126,11 @@ export default function Chat() {
   function handleReset() {
     setMessages([]);
     setInput("");
+    setIsRequesting(false);
+    setPendingSeconds(0);
+    setLastDuration(null);
+    window.clearInterval(timerRef.current);
+    timerRef.current = null;
   }
 
   console.log("Messages côté front :", messages);
@@ -119,8 +141,9 @@ export default function Chat() {
         <div className="mx-auto flex min-h-16 w-full max-w-5xl flex-col justify-center px-4 py-3 sm:px-6">
           <p className="text-lg font-bold leading-6 text-[#000091]">etudIA</p>
           <p className="mt-1 text-xs leading-5 text-[#666666] sm:text-sm">
-            Assistant d'orientation pour explorer des pistes, sans remplacer
-            Parcoursup ni les sources officielles.
+            Assistant d'orientation basé sur Parcoursup
+            pour explorer des formations qui pourraient te correspondre.<br></br>
+            Ne remplace ni Parcoursup ni les sources officielles.
           </p>
         </div>
       </header>
@@ -134,9 +157,10 @@ export default function Chat() {
           {messages.length === 0 && (
             <div className="mx-auto flex flex-1 items-center justify-center py-12 text-center">
               <p className="max-w-md text-sm leading-6 text-[#666666] sm:text-base">
-                Pose ta question d'orientation pour commencer la conversation.
-                etudIA peut t'aider à explorer des pistes, mais ne remplace pas
-                Parcoursup ni les sources officielles.
+                Dis-moi ce que tu aimes, tes matières préférées, si tu préfères travailler
+                le matin ou l’après-midi, le travail seul·e ou en équipe, tes passions,
+                devant un ordinateur ou dehors...
+                Je t’aiderai à explorer des pistes d’orientation.
               </p>
             </div>
           )}
@@ -173,6 +197,9 @@ export default function Chat() {
                         {message.content ||
                           (isRequesting ? "etudIA prépare une réponse..." : "")}
                       </ReactMarkdown>
+                      {lastDuration !== null && !isRequesting && message.content && (
+                        <p className="mt-3 text-xs text-[#666666] tabular-nums">Réponse obtenue en {lastDuration.toFixed(1)}s</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -192,7 +219,8 @@ export default function Chat() {
                 aria-hidden="true"
                 className="h-4 w-4 animate-spin rounded-full border-2 border-[#000091] border-t-transparent"
               />
-              <span>etudIA prépare une réponse...</span>
+              <span>En réflexion...</span>
+              <span className="tabular-nums text-[#666666]">{pendingSeconds}s</span>
             </div>
           )}
 
