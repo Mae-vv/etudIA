@@ -141,6 +141,19 @@ export default function Chat() {
     timerRef.current = null;
   }
 
+  function getWaitMessage(seconds) {
+  if (seconds < 15) {
+    return "En réflexion...";
+  }
+  if (seconds < 40) {
+    return "Je cherche les pistes les plus pertinentes…";
+  }
+  if (seconds < 60) {
+    return "L’analyse prend un peu plus de temps, je finalise…";
+  }
+  return "Encore un tout petit peu de patience, juste quelques instants…";
+}
+
   console.log("Messages côté front :", messages);
 
   return (
@@ -227,7 +240,7 @@ export default function Chat() {
                 aria-hidden="true"
                 className="h-4 w-4 animate-spin rounded-full border-2 border-[#000091] border-t-transparent"
               />
-              <span>En réflexion...</span>
+              <span>{getWaitMessage(pendingSeconds)}</span>
               <span className="tabular-nums text-[#666666]">{pendingSeconds}s</span>
             </div>
           )}
@@ -256,6 +269,14 @@ export default function Chat() {
                 const el = e.currentTarget;
                 el.style.height = "auto";
                 el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  if (!isRequesting && input.trim()) {
+                    e.currentTarget.form?.requestSubmit();
+                  }
+                }
               }}
               placeholder="Pose ta question d'orientation..."
               rows={1}
