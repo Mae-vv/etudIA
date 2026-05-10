@@ -1,7 +1,7 @@
 // app/api/chat/route.js
 import { NextResponse } from "next/server";
 
-export const maxDuration = 30;
+export const maxDuration = 120;
 
 export async function POST(req) {
   const body = await req.json();
