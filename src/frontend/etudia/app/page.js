@@ -13,6 +13,7 @@ export default function Chat() {
   const bottomRef = useRef(null);
   const timerRef = useRef(null);
   const startRef = useRef(null);
+  const textareaRef = useRef(null);
 
   // Auto-scroll dès que messages change
   useEffect(() => {
@@ -30,6 +31,13 @@ export default function Chat() {
     }, 1000);
     return () => window.clearInterval(timerRef.current);
   }, [isRequesting]);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
+  }, [input]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -225,7 +233,7 @@ export default function Chat() {
           )}
 
           <form
-            className="grid gap-2 sm:grid-cols-[auto_1fr_auto] sm:items-center"
+            className="grid gap-2 sm:grid-cols-[auto_1fr_auto] sm:items-start"
             onSubmit={handleSubmit}
           >
             <button
@@ -239,11 +247,18 @@ export default function Chat() {
             <label className="sr-only" htmlFor="orientation-message">
               Message à envoyer à etudIA
             </label>
-            <input
+            <textarea
+              ref={textareaRef}
               className="min-h-11 w-full rounded-sm border border-[#bcbcbc] bg-white px-3 py-2 text-base text-[#161616] outline-none placeholder:text-[#777777] focus:border-[#000091] focus:ring-2 focus:ring-[#000091]/20"
               id="orientation-message"
               onChange={(e) => setInput(e.currentTarget.value)}
+              onInput={(e) => {
+                const el = e.currentTarget;
+                el.style.height = "auto";
+                el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
+              }}
               placeholder="Pose ta question d'orientation..."
+              rows={1}
               value={input}
             />
             <button
