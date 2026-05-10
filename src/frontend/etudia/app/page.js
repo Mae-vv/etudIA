@@ -162,9 +162,11 @@ export default function Chat() {
         <div className="mx-auto flex min-h-16 w-full max-w-5xl flex-col justify-center px-4 py-3 sm:px-6">
           <p className="text-lg font-bold leading-6 text-[#000091]">etudIA</p>
           <p className="mt-1 text-xs leading-5 text-[#666666] sm:text-sm">
-            Assistant d'orientation basé sur Parcoursup
-            pour explorer des formations qui pourraient te correspondre.<br></br>
+            Assistant d'orientation basé sur Parcoursup.<br></br>
             Ne remplace ni Parcoursup ni les sources officielles.
+          </p>
+          <p className="text-xs leading-5 text-[#d62e00] sm:text-sm sm:text-right">
+            Les messages ne sont pas enregistrés. Si tu veux conserver un échange, pense à le copier-coller.
           </p>
         </div>
       </header>
