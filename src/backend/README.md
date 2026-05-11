@@ -87,7 +87,7 @@ En prod (Render), on configure `DATABASE_URL` avec la chaîne de connexion Supab
   - intérêts et matières : `domains_interet`, `matieres_aimees`, `matieres_evitees` ;
   - style de travail / rythme : `preference_rythme`, `preference_travail`, `niveau_idee_orientation`.
 
-- `profile_from_text.py` utilise `gpt-4o-mini` pour inférer un `StudentProfile` à partir d’un message libre :
+- `profile_from_text.py` utilise `gpt-5-nano` pour inférer un `StudentProfile` à partir d’un message libre :
   - le LLM renvoie un JSON strict avec uniquement les clés du profil, sans interprétation psychologique ni inférences sensibles.
 
 ### Recommandation avec filtres + similarité
@@ -172,7 +172,9 @@ L’interface de chat se contente d’afficher une liste de messages role / cont
 
 ## Pistes d’évolution pour plus de souveraineté
 Actuellement, le backend dépend :
-- d’OpenAI pour les embeddings (text-embedding-3-small) et le LLM (gpt-4o-mini) ;
+- d’OpenAI pour les embeddings (text-embedding-3-small) et les LLMs (peu cher): 
+  - gpt-4o-mini pour la réponse finale car c'est un modèle généraliste - coût : 0,15 $/1M entrée, 0,60 $/1M sortie
+  - gpt-5-nano pour extraire le profile et le structurer à partir du prompt libre de l'utilisateur, modèle pertinent pour résumé, classsifier, extraction - coût : 0,05 $/1M entrée, 0,40 $/1M sortie ;
 - de Supabase (Postgres managé) pour la base vectorielle.
 
 Pour renforcer la souveraineté et réduire la dépendance à des services propriétaires, plusieurs évolutions sont possibles :
@@ -188,7 +190,7 @@ Pour renforcer la souveraineté et réduire la dépendance à des services propr
   - Se diriger vers Scalingo qui est hébergé sur Scaleway pour le déploiement du projet (frontend, backend et vector store).
 
 3) LLM souverain / open‑source
-  - Remplacer gpt-4o-mini par un LLM open‑source (par exemple Mistral ou Qwen) exposé via une API compatible (/v1/chat/completions) ou via un fournisseur européen.
+  - Remplacer gpt-4o-mini et gpt-5-nano par des LLMs open‑source (par exemple Mistral ou Qwen) exposé via une API compatible (/v1/chat/completions) ou via un fournisseur européen.
   - Adapter profile_from_text.py et call_llm_advisor pour appeler ce nouveau modèle au lieu de l’API OpenAI.
 
 4) Séparation claire des chemins “cloud” et “self‑host”
