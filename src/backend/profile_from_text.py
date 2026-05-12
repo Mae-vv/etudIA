@@ -58,6 +58,12 @@ def infer_profile_from_text(message: str) -> StudentProfile:
         max_output_tokens=150,
     )
 
+    if not response or not getattr(response, "output", None):
+        raise ValueError("Profil non inférable à partir de ce message.")
+
+    if not response.output[0].content:
+        raise ValueError("Réponse LLM vide pour le profil.")
+
     raw = response.output[0].content[0].text
 
     raw_stripped = raw.strip()

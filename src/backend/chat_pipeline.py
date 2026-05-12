@@ -34,8 +34,14 @@ def student_orientation(message: str, history: List[Dict[str, Any]]) -> str:
     3. Récupère des formations recommandées avec reasons/explanations.
     4. Appelle un LLM pour formuler une réponse lisible.
     """
-    # 1) Profil structuré à partir du texte libre
-    profile: StudentProfile = infer_profile_from_text(message)
+
+    try:
+        profile: StudentProfile = infer_profile_from_text(message)
+    except ValueError:
+        return (
+            "Je n'arrive pas à déduire ton profil à partir de ce message. "
+            "Peux-tu préciser ce que tu aimes, tes matières ou ce que tu cherches ?"
+        )
 
     # 2) Embedding pour le RAG
     # Old way query_emb = model.encode(message, normalize_embeddings=True)
