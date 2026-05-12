@@ -6,7 +6,9 @@ import ReactMarkdown from "react-markdown";
 
 export default function Chat() {
   const [input, setInput] = useState("");
+  const [infoMessage, setInfoMessage] = useState("");
   const [isRequesting, setIsRequesting] = useState(false);
+  const [isBackendReady, setIsBackendReady] = useState(false);
   const [messages, setMessages] = useState([]);
   const [pendingSeconds, setPendingSeconds] = useState(0);
   const [lastDuration, setLastDuration] = useState(null);
@@ -14,6 +16,23 @@ export default function Chat() {
   const timerRef = useRef(null);
   const startRef = useRef(null);
   const textareaRef = useRef(null);
+
+  useEffect(() => {
+    const warmup = async () => {
+      const baseUrl =
+        process.env.NEXT_PUBLIC_API;
+
+      try {
+        const res = await fetch(`${baseUrl}/health`);
+        if (res.ok) {
+          setIsBackendReady(true);
+        }
+      } catch (e) {
+        console.error("Backend warmup failed", e);
+      }
+    };
+    warmup();
+  }, []);
 
   // Auto-scroll dès que messages change
   useEffect(() => {
@@ -23,14 +42,35 @@ export default function Chat() {
   });
 
   useEffect(() => {
-    if (!isRequesting) return;
+    const shouldTrackTime = !isBackendReady || isRequesting;
+    if (!shouldTrackTime) {
+      if (timerRef.current) {
+        window.clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      return;
+    }
+
     setPendingSeconds(0);
     startRef.current = Date.now();
+
+    if (timerRef.current) {
+      window.clearInterval(timerRef.current);
+    }
+
     timerRef.current = window.setInterval(() => {
-      setPendingSeconds(Math.max(0, Math.floor((Date.now() - startRef.current) / 1000)));
+      setPendingSeconds(
+        Math.max(0, Math.floor((Date.now() - startRef.current) / 1000)),
+      );
     }, 1000);
-    return () => window.clearInterval(timerRef.current);
-  }, [isRequesting]);
+
+    return () => {
+      if (timerRef.current) {
+        window.clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [isBackendReady, isRequesting]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -42,6 +82,14 @@ export default function Chat() {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!input.trim()) return;
+
+    if (!isBackendReady) {
+      setInfoMessage(
+        "La première réponse peut prendre un peu plus de temps, le serveur se réveille."
+      );
+    } else {
+      setInfoMessage("");
+    }
 
     const t0 = Date.now();
     const messageId = t0.toString();
@@ -236,17 +284,32 @@ export default function Chat() {
 
       <footer className="fixed inset-x-0 bottom-0 z-20 border-t border-[#d9d9d9] bg-white px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] sm:px-6">
         <div className="mx-auto w-full max-w-5xl">
-          {isRequesting && (
+          {infoMessage && (
+            <p className="mb-1 text-xs text-[#666666]">
+              {infoMessage}
+            </p>
+          )}
+          {!isBackendReady ? (
             <div className="mb-2 flex items-center gap-2 text-sm text-[#3a3a3a]">
               <span
                 aria-hidden="true"
                 className="h-4 w-4 animate-spin rounded-full border-2 border-[#000091] border-t-transparent"
               />
-              <span>{getWaitMessage(pendingSeconds)}</span>
+              <span>Connexion au serveur…</span>
               <span className="tabular-nums text-[#666666]">{pendingSeconds}s</span>
             </div>
+          ) : (
+            isRequesting && (
+              <div className="mb-2 flex items-center gap-2 text-sm text-[#3a3a3a]">
+                <span
+                  aria-hidden="true"
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-[#000091] border-t-transparent"
+                />
+                <span>{getWaitMessage(pendingSeconds)}</span>
+                <span className="tabular-nums text-[#666666]">{pendingSeconds}s</span>
+              </div>
+            )
           )}
-
           <form
             className="grid gap-2 sm:grid-cols-[auto_1fr_auto] sm:items-start"
             onSubmit={handleSubmit}
