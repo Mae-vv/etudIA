@@ -15,6 +15,10 @@ export default function Chat() {
   const startRef = useRef(null);
   const textareaRef = useRef(null);
 
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API}/health`).catch(() => {});
+  }, []);
+
   // Auto-scroll dès que messages change
   useEffect(() => {
     if (bottomRef.current) {

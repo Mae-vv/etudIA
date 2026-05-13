@@ -9,6 +9,10 @@ from src.backend.chat_pipeline import student_orientation
 
 app = FastAPI()
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 class RecommendationRequest(BaseModel):
     question: str
     profile: Dict[str, Any]
