@@ -284,7 +284,7 @@ export default function Chat() {
                   }
                 }
               }}
-              placeholder="Pose ta question d'orientation..."
+              placeholder="Dis-moi qui tu es ou ce que tu recherches..."
               rows={1}
               value={input}
             />
