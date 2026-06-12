@@ -30,7 +30,9 @@ def infer_profile_from_text(message: str) -> StudentProfile:
         "niveau_idee_orientation": "aucune_idee"
     }
 
-    Utilise un LLM pour analyser un message libre d'un lycéen
+    Utilise un LLM (gpt-5-nano car bon pour les tâches de
+    classification/résumé/tâches d'extraction...)
+    pour analyser un message libre d'un lycéen
     et renvoyer un StudentProfile JSON.
     """
 
@@ -48,7 +50,7 @@ def infer_profile_from_text(message: str) -> StudentProfile:
     )
 
     response = client.responses.create(
-        model="gpt-4o-mini",
+        model="gpt-5-nano",
         input=[
             {"role": "system", "content": system},
             {"role": "user", "content": message},

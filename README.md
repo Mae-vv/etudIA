@@ -59,7 +59,7 @@ Les requêtes RAG combinent une similarité cosinus (`embedding <=> query_vector
 
 1. **Pré-requis : clé API OpenAI payante**
 
-   Le backend utilise un modèle de la famille GPT (ex. `gpt-4o-mini`) via l’API OpenAI.
+   Le backend utilise deux modèles de la famille GPT (ex. `gpt-4o-mini` et `gpt-5-nano`) via l’API OpenAI.
    Il faut donc :
 
    - un compte OpenAI avec crédits (facturation activée),
