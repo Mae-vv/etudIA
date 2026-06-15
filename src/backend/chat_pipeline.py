@@ -157,5 +157,5 @@ def call_llm_advisor(
         max_output_tokens=600,  # contrôle du coût
     )
 
-    answer = response.output[0].content[0].text
+    answer = response.output_text
     return answer

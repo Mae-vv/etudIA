@@ -58,7 +58,7 @@ def infer_profile_from_text(message: str) -> StudentProfile:
         max_output_tokens=150,
     )
 
-    raw = response.output[0].content[0].text
+    raw = response.output_text
 
     raw_stripped = raw.strip()
     if raw_stripped.startswith("```"):
