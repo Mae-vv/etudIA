@@ -55,19 +55,21 @@ def infer_profile_from_text(message: str) -> StudentProfile:
             {"role": "system", "content": system},
             {"role": "user", "content": message},
         ],
-        max_output_tokens=150,
+        max_output_tokens=300,
+        reasoning={"effort": "minimal"},
+        text={"format": {"type": "json_object"}},
     )
 
-    raw = response.output_text
+    # Cherche le bloc "message" dynamiquement (ignore le bloc "reasoning")
+    message_block = next(
+        (item for item in response.output if item.type == "message"), None
+    )
 
-    raw_stripped = raw.strip()
-    if raw_stripped.startswith("```"):
-        # on enlève les ```json et les ``` de fin
-        raw_stripped = raw_stripped.strip("`")
-        # supprime le tag json éventuel au début
-        if raw_stripped.startswith("json"):
-            raw_stripped = raw_stripped[len("json"):].lstrip()
+    if not message_block:
+        raise ValueError(f"No message block in LLM response. output={response.output}")
 
-    data = json.loads(raw_stripped)
+    raw = message_block.content[0].text
+
+    data = json.loads(raw)
 
     return data
